@@ -120,10 +120,13 @@ def apply_render_res(env, config):
     say(f'Internal resolution: {plan["label"]} ({path} rendering path)')
 
 
-# Online play (docs/sacredfire/15-online.md): off unless bbport.ini's online_server (or
-# BB_ONLINE_SERVER) names a private server. Every name the game resolves then answers that
-# server; nothing else is reachable. online_id is the PSN name shown to other players.
+# Online play (docs/sacredfire/15-online.md): off unless bbport.ini's online switch is on (the
+# launcher's Online section) and online_server names a private server. Every name the game resolves
+# then answers that server; nothing else is reachable. online_id is the name shown to other players.
+# BB_ONLINE_SERVER already in the environment still wins (for a manual run).
 def apply_online(env, config):
+    if not env.get('BB_ONLINE_SERVER') and ini_value(config, 'online') != '1':
+        return  # the switch is off: stay offline, whatever address is stored
     for key, variable in (('online_server', 'BB_ONLINE_SERVER'), ('online_http_port', 'BB_ONLINE_HTTP_PORT'),
                           ('online_id', 'BB_ONLINE_ID'), ('online_allow', 'BB_ONLINE_ALLOW')):
         value = ini_value(config, key)

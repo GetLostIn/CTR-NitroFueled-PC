@@ -1771,6 +1771,60 @@ void SettingsTab() {
                  "francés y portugués de Brasil. El español de España no está en ella. Se aplica al pulsar Jugar.",
                  "The languages this build of the game has (CUSA13795, the Americas): English, Latin American "
                  "Spanish, French and Brazilian Portuguese. Spain's Spanish is not in it. Applied when you press Play."));
+
+    // Online (private server): writes online / online_server / online_http_port / online_id to
+    // bbport.ini; run.py turns the network layer on only when "online" is 1 and a server is set.
+    // The launcher only stores where to connect; it is not involved in how a server authenticates.
+    ImGui::SeparatorText(T("En línea (servidor privado)", "Online (private server)"));
+    {
+        bool on = a.game.Flag("online", false);
+        if (ImGui::Checkbox(T("Activar juego en línea", "Enable online play"), &on)) {
+            a.game.Set("online", on ? "1" : "0");
+            SaveGameIni();
+        }
+        HelpMarker(T("Apagado por defecto. El juego se conecta solo al servidor privado que indiques aquí; "
+                     "los servidores oficiales de Activision y de PSN nunca se contactan. Necesitas un servidor "
+                     "privado en marcha para que funcione.",
+                     "Off by default. The game connects only to the private server you set here; Activision's and "
+                     "PSN's official servers are never contacted. You need a running private server for this to work."));
+        if (on) {
+            ImGui::Indent();
+            auto field = [&](const char* label, const char* key, const char* fallback, const char* hint) {
+                char buf[128];
+                std::snprintf(buf, sizeof buf, "%s", a.game.Get(key, fallback).c_str());
+                ImGui::SetNextItemWidth(ImGui::GetFontSize() * 22.0f);
+                if (ImGui::InputText(label, buf, sizeof buf)) a.game.Set(key, buf);
+                if (ImGui::IsItemDeactivatedAfterEdit()) SaveGameIni();
+                if (hint) HelpMarker(hint);
+            };
+            field(T("Dirección del servidor", "Server address"), "online_server", "",
+                  T("La IP o el nombre del servidor privado (por ejemplo 192.168.1.50).",
+                    "The private server's IP or host name (e.g. 192.168.1.50)."));
+            field(T("Puerto HTTP", "HTTP port"), "online_http_port", "8080",
+                  T("El puerto por el que el servidor atiende las peticiones (8080 por defecto).",
+                    "The port the server answers requests on (8080 by default)."));
+            {
+                char buf[64];
+                std::snprintf(buf, sizeof buf, "%s", a.game.Get("online_id", "").c_str());
+                ImGui::SetNextItemWidth(ImGui::GetFontSize() * 22.0f);
+                if (ImGui::InputText(T("Nombre de jugador", "Player name"), buf, sizeof buf)) a.game.Set("online_id", buf);
+                if (ImGui::IsItemDeactivatedAfterEdit()) SaveGameIni();
+                const std::string id = a.game.Get("online_id", "");
+                bool valid = id.size() >= 3 && id.size() <= 16;
+                for (char c : id)
+                    if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_')) valid = false;
+                if (!id.empty() && !valid)
+                    ImGui::TextColored(kYellow, "%s", T("3 a 16 caracteres: letras, números, - o _.",
+                                                        "3 to 16 characters: letters, digits, - or _."));
+                else
+                    ImGui::TextColored(kGrey, "%s", T("El nombre que ven otros jugadores (vacío: tu usuario de Windows).",
+                                                      "The name other players see (empty: your Windows user)."));
+            }
+            ImGui::TextColored(kYellow, "%s", T("Solo servidores privados. Los servidores oficiales nunca se contactan.",
+                                                "Private servers only. Official servers are never contacted."));
+            ImGui::Unindent();
+        }
+    }
 }
 
 void PatchesTab() {
