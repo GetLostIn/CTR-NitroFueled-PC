@@ -106,6 +106,12 @@ struct Values {
     /// shader no longer stops the game; a pass drawn every frame may miss a frame or two.
     /// Experimental (STATUS.md, issue #2). Applies at once. BB_ASYNC_PIPELINES overrides it.
     std::atomic<bool> async_pipelines{false};
+    /// SacredFire: the game's 2x MSAA (G-buffer and forward passes). Off by default: on the host
+    /// GPU, single-sample colour drawn over the 2x depth buffer blends twice along triangle edges
+    /// (dotted lines in skies and light shafts, GitHub issues #16/#18), and at the internal
+    /// resolutions this port offers MSAA adds little. Read once at start (restart to apply);
+    /// BB_NO_MSAA=1/0 overrides it. AmdGpu::BbNoMsaa() is the switch the renderer reads.
+    std::atomic<bool> msaa{false};
     /// SacredFire: exclusive fullscreen on the game's display (BB_DISPLAY). Applies at once;
     /// BB_FULLSCREEN=1 at start. Saved to bbport.ini by the menu.
     std::atomic<bool> fullscreen{false};

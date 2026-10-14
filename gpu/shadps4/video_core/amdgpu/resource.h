@@ -10,6 +10,14 @@
 #include "video_core/amdgpu/tiling.h"
 
 namespace AmdGpu {
+/// SacredFire (GitHub issues #16/#18): true when the game's MSAA is off (bbport.ini msaa=0, the
+/// default; BB_NO_MSAA overrides): every multisampled target is rendered with one sample on the
+/// host, the guest memory layout unchanged, and MSAA texture reads become plain 2D reads.
+/// Defined in shim/bbport_settings.cpp; fixed for the session.
+bool BbNoMsaa();
+} // namespace AmdGpu
+
+namespace AmdGpu {
 
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
@@ -310,6 +318,14 @@ struct Image {
 
     ImageType GetViewType(const bool is_array) const noexcept {
         const auto base_type = GetType();
+        if (BbNoMsaa()) {
+            if (base_type == ImageType::Color2DMsaa) {
+                return ImageType::Color2D;
+            }
+            if (base_type == ImageType::Color2DMsaaArray) {
+                return is_array ? ImageType::Color2DArray : ImageType::Color2D;
+            }
+        }
         if (IsCube()) {
             // Cube needs to remain array type regardless of instruction array specifier.
             return base_type;
