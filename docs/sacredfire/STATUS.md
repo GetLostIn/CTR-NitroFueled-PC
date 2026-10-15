@@ -61,6 +61,20 @@ with the desktop apps closed.
 
 ## Known issues
 
+- **Dotted lines in skies and light shafts** (fixed 2026-10-15, GitHub issues #16, #18; also
+  seen in shadPS4): thin dotted bright lines along straight edges in the sky and in light shafts,
+  on NVIDIA at any resolution. Frame analysis (sky images saved before and after each sky draw,
+  the sky box's vertices and camera matrix recorded and projected): the lines lie exactly on the
+  shared edges of the sky glow's triangles (a sky box, multiply-blended over the sky dome), and the
+  line pixels match the glow applied twice. The triangles' corners are identical and none of them
+  is clipped there; the double write comes from CTR's 2x MSAA: single-sample colour drawn over the
+  2x depth buffer. Ruled out on the way: cube map seams, NVIDIA manual interpolation, the depth
+  test, depth clipping, guard band clipping (resolution independent), host clipping of the sky box
+  (a watertight clipping geometry shader changed nothing) and a sample-0 colour mask. Fix: the
+  game's MSAA is a setting, off by default (bbport.ini `msaa`, launcher Settings > Display; needs a
+  restart; BB_NO_MSAA overrides): host images, views and pipelines use one sample, the guest
+  memory layout is unchanged and MSAA texture reads become plain 2D reads. User-confirmed (lines
+  gone, no other differences on several tracks).
 - **Adventure hub sky stripes** (fixed 2026-10-09, run 31): the frame analyzer showed the final
   colour-grading pass sampling a 1024x32 lookup table built from height-1 render targets that the
   game samples as 1D textures; the cache gave those 1D views a separate image filled from guest

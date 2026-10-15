@@ -67,6 +67,8 @@ void Set(Values& v, const std::string& key, const std::string& value) {
         v.fps_limit = std::clamp(i, 0, 1000);
     } else if (key == "async_pipelines") {
         v.async_pipelines = i != 0;
+    } else if (key == "msaa") {
+        v.msaa = i != 0;
     } else if (key == "fullscreen") {
         v.fullscreen = i != 0;
     } else if (key == "menu_pos") {
@@ -312,6 +314,7 @@ void Save() {
     put("show_fps", flag(v.show_fps));
     put("fps_limit", std::to_string(v.fps_limit.load()));
     put("async_pipelines", flag(v.async_pipelines));
+    put("msaa", flag(v.msaa));
     put("fullscreen", flag(v.fullscreen));
     put("fsr4_auto_exposure", flag(v.fsr4_auto_exposure));
     put("fsr4_invert_jitter", flag(v.fsr4_invert_jitter));
@@ -409,3 +412,15 @@ const char* UpscalerName(int upscaler) {
 }
 
 } // namespace BbSettings
+
+namespace AmdGpu {
+bool BbNoMsaa() {
+    static const bool value = [] {
+        if (const char* env = std::getenv("BB_NO_MSAA")) {
+            return env[0] == '1';
+        }
+        return !BbSettings::Get().msaa.load();
+    }();
+    return value;
+}
+} // namespace AmdGpu

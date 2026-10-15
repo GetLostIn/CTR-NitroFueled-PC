@@ -1630,6 +1630,13 @@ void SettingsTab() {
                "Fewer hitches when an effect is first seen; an effect may show up a frame late."));
 
     ImGui::SeparatorText(T("Pantalla", "Display"));
+    GameFlag("msaa", T("MSAA del juego (2x)", "Game MSAA (2x)"), false,
+             T("El antialiasing 2x de la PS4. Desactivado por defecto: en PC dibuja líneas punteadas en el "
+               "cielo y en los rayos de luz. A resoluciones altas o con FSR/DLSS casi no se nota. "
+               "Requiere reiniciar.",
+               "The PS4's 2x anti-aliasing. Off by default: on PC it draws dotted lines in the sky and "
+               "in light shafts. At high internal resolutions or with FSR/DLSS it is barely missed. "
+               "Needs a restart."));
     const std::string temporal = GameTemporal();
     const bool dlss_sized = temporal == "dlss" && a.game.Get("dlss_quality", "auto") != "auto";
     ImGui::BeginDisabled(dlss_sized);

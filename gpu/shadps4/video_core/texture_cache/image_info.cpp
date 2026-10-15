@@ -58,7 +58,7 @@ ImageInfo::ImageInfo(const AmdGpu::ColorBuffer& buffer, AmdGpu::CbDbExtent hint)
     tile_mode = buffer.GetTileMode();
     array_mode = AmdGpu::GetArrayMode(tile_mode);
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
-    num_samples = buffer.NumSamples();
+    num_samples = AmdGpu::BbNoMsaa() ? 1u : buffer.NumSamples();
     num_bits = NumBitsPerBlock(buffer.GetDataFmt());
     type = AmdGpu::ImageType::Color2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
@@ -91,7 +91,7 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
     props.is_tiled = buffer.IsTiled();
     props.is_depth = true;
     props.has_stencil = buffer.stencil_info.format != AmdGpu::DepthBuffer::StencilFormat::Invalid;
-    num_samples = buffer.NumSamples();
+    num_samples = AmdGpu::BbNoMsaa() ? 1u : buffer.NumSamples();
     num_bits = buffer.NumBits();
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
@@ -134,7 +134,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
-    num_samples = image.NumSamples();
+    num_samples = AmdGpu::BbNoMsaa() ? 1u : image.NumSamples();
     num_bits = NumBitsPerBlock(image.GetDataFmt());
     bank_swizzle = image.GetBankSwizzle();
 

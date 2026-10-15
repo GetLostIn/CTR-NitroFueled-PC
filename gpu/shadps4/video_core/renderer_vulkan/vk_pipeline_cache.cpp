@@ -187,7 +187,8 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(PipelineSelection& se
         info.hw.fs.num_inputs = regs.num_interp;
         info.hw.fs.front_face_all_bits = regs.barycentric_control.front_face_all_bits;
         info.hw.fs.num_samples =
-            regs.ps_input_addr.sample_coverage_ena && regs.ps_input_ena.sample_coverage_ena
+            regs.ps_input_addr.sample_coverage_ena && regs.ps_input_ena.sample_coverage_ena &&
+                    !AmdGpu::BbNoMsaa()
                 ? regs.aa_config.NumSamples()
                 : 1;
         info.hw.fs.z_export_format = regs.z_export_format;
@@ -736,7 +737,7 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
     key.patch_control_points =
         regs.stage_enable.hs_en ? regs.ls_hs_config.hs_input_control_points : 0;
     key.logic_op = regs.color_control.rop3;
-    key.depth_samples = db_enabled ? regs.depth_buffer.NumSamples() : 1;
+    key.depth_samples = db_enabled && !AmdGpu::BbNoMsaa() ? regs.depth_buffer.NumSamples() : 1;
     key.num_samples = key.depth_samples;
     key.cb_shader_mask = regs.color_shader_mask;
 
@@ -863,7 +864,8 @@ bool PipelineCache::RefreshGraphicsKey(PipelineSelection& sel) {
             vk::ColorComponentFlags{key.color_buffers[cb].swizzle.ApplyMask(target_mask)};
 
         // Fill color samples
-        const u8 prev_color_samples = std::exchange(color_samples, col_buf.NumSamples());
+        const u8 prev_color_samples =
+            std::exchange(color_samples, AmdGpu::BbNoMsaa() ? 1u : col_buf.NumSamples());
         all_color_samples_same &= color_samples == prev_color_samples || prev_color_samples == 0;
         key.color_samples[cb] = color_samples;
         key.num_samples = std::max(key.num_samples, color_samples);
