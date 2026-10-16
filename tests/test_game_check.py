@@ -98,8 +98,34 @@ class GameCheckTests(unittest.TestCase):
         (game / 'sce_module').mkdir()
         self.assertIsNone(game_check.problem(game))
 
+    def archive(self, game, name, names):
+        """An IGA archive whose name table (offset at 0x28, size at 0x30) holds `names`."""
+        (game / 'archives').mkdir(exist_ok=True)
+        header = bytearray(0x38)
+        header[:4] = b'IGA\x1a'
+        struct.pack_into('<I', header, 0x28, 0x800)
+        struct.pack_into('<I', header, 0x30, len(names))
+        (game / 'archives' / name).write_bytes(bytes(header) + bytes(0x800 - 0x38) + names)
+
+    def test_zeroed_archive_name_tables_are_a_damaged_dump(self):
+        # An extractor that inflates compressed PFS blocks only partly leaves zeros where the
+        # archives keep their file names; the game then cannot find its files (code 3 at start).
+        game = self.game('CUSA13795', '01.21')
+        self.archive(game, 'loosefiles.pak', b'\0' * 64)
+        self.archive(game, 'gamestartup.pak', b'names/table.igz\0')
+        self.assertEqual(game_check.problem(game), ('damaged_archives', 'CUSA13795', '01.21'))
+        self.assertEqual(game_check.damaged_archives(game), ['loosefiles.pak'])
+        self.assertIn('extract', game_check.explain(*game_check.problem(game)))
+
+    def test_intact_archives_pass(self):
+        game = self.game('CUSA13795', '01.21')
+        self.archive(game, 'loosefiles.pak', b'localizationData.igz\0')
+        (game / 'archives/intro.bk2').write_bytes(b'\0' * 64)  # not an archive
+        self.assertIsNone(game_check.problem(game))
+        self.assertEqual(game_check.damaged_archives(game), [])
+
     def test_every_problem_is_explained(self):
-        for kind in ('missing_update', 'wrong_eboot', 'other_title', 'unreadable'):
+        for kind in ('missing_update', 'wrong_eboot', 'other_title', 'unreadable', 'damaged_archives'):
             self.assertIn('CUSA', game_check.explain(kind, 'CUSA13795', '01.00'))
             self.assertIn('CUSA', game_check.explain(kind, 'CUSA00000', '01.00'))
 
