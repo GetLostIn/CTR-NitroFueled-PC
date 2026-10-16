@@ -14,6 +14,7 @@ and the log says it is the less-tested build.
 """
 import hashlib
 import os
+import struct
 import sys
 from pathlib import Path
 
@@ -84,10 +85,36 @@ def split_layout(game):
     return (game / 'Image0/eboot.bin').is_file() and not (game / 'sce_module').is_dir()
 
 
+def damaged_archives(game):
+    """The archives/*.pak (IGA) files whose file-name table is all zeros. An extractor that
+    inflates the package's compressed PFS blocks only partly (LibOrbisPkg's PFSCReader on .NET Core
+    and later: one DeflateStream.Read per 64 KiB block) leaves zeros at the ends of blocks; where
+    they land on an archive's name table the game cannot find its files, and with loosefiles.pak
+    (localizationData.igz) it stops at start with a read of address 0x20 (code 3)."""
+    damaged = []
+    for path in sorted((Path(game) / 'archives').glob('*.pak')):
+        try:
+            with open(path, 'rb') as f:
+                header = f.read(0x38)
+                if len(header) < 0x38 or header[:4] != b'IGA\x1a':
+                    continue
+                offset, size = struct.unpack_from('<I', header, 0x28)[0], struct.unpack_from('<I', header, 0x30)[0]
+                if not size:
+                    continue
+                f.seek(offset)
+                names = f.read(size)
+        except OSError:
+            continue
+        if len(names) == size and not any(names):
+            damaged.append(path.name)
+    return damaged
+
+
 def problem(game, image_hash=None):
     """None for a supported game, else (kind, title, version): kind is 'missing_update' (base
     game or an older update), 'wrong_eboot' (param.sfo names the supported update, eboot.bin is
-    another version), 'split_layout' (Image0 + Sc0 not flattened), 'other_title' (another edition, region or game) or 'unreadable'."""
+    another version), 'split_layout' (Image0 + Sc0 not flattened), 'other_title' (another edition, region or game),
+    'unreadable' or 'damaged_archives' (archives with zeroed name tables: a bad extraction)."""
     if os.environ.get('BB_SKIP_GAME_CHECK') == '1':
         return None
     if split_layout(game):
@@ -102,15 +129,17 @@ def problem(game, image_hash=None):
         image_hash = image_hash or image_sha256(game)
     except (OSError, ValueError, IndexError, StopIteration, KeyError):
         return 'unreadable', title, version
-    if image_hash in SUPPORTED:
-        return None
-    if title not in BY_TITLE:
-        return 'other_title', title, version
-    if version != BY_TITLE[title]['version']:
-        return 'missing_update', title, version
-    if image_hash in OLD_IMAGES:
-        return 'wrong_eboot', title, version
-    return None  # another 1.21 build (6.72+): accepted, see the module docstring
+    if image_hash not in SUPPORTED:
+        if title not in BY_TITLE:
+            return 'other_title', title, version
+        if version != BY_TITLE[title]['version']:
+            return 'missing_update', title, version
+        if image_hash in OLD_IMAGES:
+            return 'wrong_eboot', title, version
+        # otherwise another 1.21 build (6.72+): accepted, see the module docstring
+    if damaged_archives(game):
+        return 'damaged_archives', title, version
+    return None
 
 
 def explain(kind, title, version):
@@ -130,6 +159,11 @@ def explain(kind, title, version):
                         'and everything in Sc0 to its sce_sys folder.',
         'unreadable': f'{found} eboot.bin could not be read as a decrypted PS4 executable: dump '
                       'the game and its update again.',
+        'damaged_archives': f'{found} Some archives/*.pak files have their file-name table filled with zeros, '
+                            'so the game cannot find its files (it would stop at start with code 3). The '
+                            'package was extracted badly: extract the game and its update again with another '
+                            'tool, or with a LibOrbisPkg/PkgTool build that reads every compressed PFS block '
+                            'completely, then merge them again.',
     }[kind]
 
 
@@ -138,7 +172,11 @@ if __name__ == '__main__':
     game = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('.')
     found = problem(game)
     if found:
-        sys.exit('Unsupported game files: ' + explain(*found))
+        message = 'Unsupported game files: ' + explain(*found)
+        if found[0] == 'damaged_archives':
+            damaged = damaged_archives(game)
+            message += f' Damaged ({len(damaged)}): ' + ', '.join(damaged[:10]) + (', ...' if len(damaged) > 10 else '')
+        sys.exit(message)
     p = profile(game)
     print(p['name'] if p else 'unknown')
 
