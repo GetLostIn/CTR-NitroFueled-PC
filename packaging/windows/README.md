@@ -70,6 +70,12 @@ set BB_GAME_DIR=C:\Games\CUSA13795-1.21
 C:\msys64\clang64\bin\python.exe run.py
 ```
 
+On CPUs without MOVBE, BMI1 or LZCNT (Sandy Bridge, Ivy Bridge) the Python that runs `run.py`
+also needs `iced-x86` for the start-up rewrite (15-isa-rewrite.md): install it in a python.org
+Python 3 (`pip install iced-x86`) and run `run.py` with that one. MSYS2's Python has no compatible
+wheel (its source build needs Rust); the portable ZIP bundles iced-x86 through
+`make_portable.py`.
+
 From a source tree it puts `C:\msys64\clang64\bin` (or `%MSYS2_ROOT%\clang64\bin`) on `PATH`
 for the DLLs. The in-game menu (Insert, or L3+R3) works as on Linux; "Apply and restart" ends
 the game with exit code 75 (`BB_RESTART_EXIT_CODE`) and `run.py` starts it again with the new

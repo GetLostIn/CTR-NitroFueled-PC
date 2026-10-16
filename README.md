@@ -99,6 +99,12 @@ launcher's log and `user\last_run.log` say which file is missing; attach `last_r
 4. Run: `set BB_GAME_DIR=<CUSA13795-1.21>` and `C:\msys64\clang64\bin\python.exe run.py`.
    In the game, **Insert** (or L3+R3) opens the port's menu.
 
+CPUs without MOVBE, BMI1 or LZCNT (Sandy Bridge, Ivy Bridge) also need `iced-x86` for the Python
+that runs `run.py`, which the port uses to rewrite those instructions at start
+([15-isa-rewrite.md](docs/sacredfire/15-isa-rewrite.md), issue #31). MSYS2's Python cannot install
+the wheel: use a python.org Python 3 (`pip install iced-x86`) or the portable ZIP from Releases,
+which bundles it.
+
 ### Credits
 
 This fork stands on the work of:
@@ -176,9 +182,11 @@ full play-through has not been verified, and the Steam Deck (RADV) is the only t
   the base game, replacing files (eboot.bin and sce_sys too), or use `tools/merge_update.py`
   (it also reads PS4 PKG Tool's Image0 + Sc0 layout; see "Which game dumps work" above). The launcher and `run.sh` check
   the executable image and say what is missing (`BB_SKIP_GAME_CHECK=1` skips the check).
-- To build: GCC, CMake, Ninja, Python 3, glslang, SDL3, Vulkan headers and the libraries in
-  `shell.nix` (with [Nix](https://nixos.org), `shell.nix` provides them). On Arch:
-  `tools/deps.sh` fetches the header-only libraries the distribution lacks.
+- To build: GCC, CMake, Ninja, Python 3 (for CPUs without MOVBE, BMI1 or LZCNT,
+  `pip install iced-x86`: [15-isa-rewrite.md](docs/sacredfire/15-isa-rewrite.md)), glslang, SDL3,
+  Vulkan headers and the libraries in `shell.nix` (with [Nix](https://nixos.org), `shell.nix`
+  provides them). On Arch: `tools/deps.sh` fetches the header-only libraries the distribution
+  lacks.
 
 ## Build and run
 
