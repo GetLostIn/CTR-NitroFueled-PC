@@ -37,6 +37,14 @@ LAUNCHER = 'CTR-NitroFueled-PC.exe'
 PYTHON_VERSION = '3.14.8'
 PYTHON_URL = f'https://www.python.org/ftp/python/{PYTHON_VERSION}/python-{PYTHON_VERSION}-embed-amd64.zip'
 PYTHON_SHA256 = 'a93abe456ab01bd96d7a085b3cdb6566b3063f4241360d114142fbdb07f0a310'
+# iced-x86: run.py scans the linked image for Haswell-only instructions on CPUs without MOVBE,
+# BMI1 or LZCNT (docs/sacredfire/15-isa-rewrite.md). The cp38-abi3 wheel is a zip and loads on
+# the bundled 3.14 without pip. Pinned by version and SHA-256.
+ICED_X86_VERSION = '1.21.0'
+ICED_X86_URL = ('https://files.pythonhosted.org/packages/04/9e/'
+                'ab21c70472b605bbcaca5a181cfda56b0750b061f4a946192888142ec37c/'
+                f'iced_x86-{ICED_X86_VERSION}-cp38-abi3-win_amd64.whl')
+ICED_X86_SHA256 = '04e04a8cc49ca7d89448fb78e3bab4ae364cf1fc888c996540a791c9999077c1'
 # Windows' own DLLs: never bundled.
 SYSTEM_DLLS = {'kernel32', 'user32', 'gdi32', 'advapi32', 'shell32', 'ole32', 'oleaut32', 'ws2_32',
                'msvcrt', 'ntdll', 'bcrypt', 'bcryptprimitives', 'crypt32', 'secur32', 'winmm',
@@ -120,6 +128,11 @@ def third_party(dlls, python=None, dlss=False):
                   '           SQLite and the Microsoft C runtime redistributables)',
                   '  home:    https://www.python.org/',
                   f'  source:  https://www.python.org/downloads/release/python-{PYTHON_VERSION.replace(".", "")}/', '']
+        lines += [f'iced-x86 {ICED_X86_VERSION}, in python\\Lib\\site-packages\\ (run.py\'s ISA',
+                  '  rewrite table for CPUs without MOVBE/BMI1/LZCNT, docs/sacredfire/15-isa-rewrite.md)',
+                  '  license: MIT (https://github.com/icedland/iced/blob/master/LICENSE.txt)',
+                  '  home:    https://github.com/icedland/iced',
+                  f'  source:  https://pypi.org/project/iced-x86/{ICED_X86_VERSION}/#files', '']
     if dlss:
         lines += DLSS_THIRD_PARTY
     lines += ['sacredfire.exe includes AMD FidelityFX FSR 3.1 (MIT, through',
@@ -149,8 +162,30 @@ def bundle_python(folder, cache):
         z.extractall(target)
     pth = next(target.glob('python3*._pth'))
     zipped = next(target.glob('python3*.zip')).name
-    pth.write_bytes(f'{zipped}\r\n.\r\n..\\scripts\r\n..\\tools\r\n'.encode())
+    pth.write_bytes(f'{zipped}\r\n.\r\n..\\scripts\r\n..\\tools\r\nLib\\site-packages\r\n'.encode())
     return f'Python {PYTHON_VERSION} (python.org embeddable package)'
+
+
+def bundle_iced_x86(folder, cache):
+    """python/Lib/site-packages in the package: iced-x86, which run.py needs to build the ISA
+    rewrite table on CPUs without MOVBE/BMI1/LZCNT (docs/sacredfire/15-isa-rewrite.md). A wheel
+    is a zip, so no pip is needed; the cp38-abi3 extension loads on the bundled Python."""
+    wheel = cache / Path(ICED_X86_URL).name
+    if not wheel.is_file():
+        cache.mkdir(parents=True, exist_ok=True)
+        print(f'Downloading {ICED_X86_URL}')
+        with urllib.request.urlopen(ICED_X86_URL, timeout=120) as response:
+            wheel.write_bytes(response.read())
+    digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
+    if digest != ICED_X86_SHA256:
+        wheel.unlink()
+        sys.exit(f'{wheel.name}: SHA-256 {digest}, expected {ICED_X86_SHA256}')
+    target = folder / 'python' / 'Lib' / 'site-packages'
+    prefix = f'iced_x86-{ICED_X86_VERSION}.dist-info'
+    with zipfile.ZipFile(wheel) as z:
+        for name in z.namelist():
+            if name.split('/')[0] in ('iced_x86', prefix):
+                z.extract(name, target)
 
 
 def write_text(path, text):
@@ -197,6 +232,7 @@ def main():
                    (ROOT / 'dlss_bridge' / 'LICENSE.txt').read_text(encoding='utf-8'))
     shutil.copy2(launcher, folder)
     python = bundle_python(folder, a.dist / 'pycache')
+    bundle_iced_x86(folder, a.dist / 'pycache')
     shutil.copy2(ROOT / 'run.py', folder)
     for script in (ROOT / 'scripts').glob('*.py'):
         shutil.copy2(script, folder / 'scripts')

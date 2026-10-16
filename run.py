@@ -48,6 +48,22 @@ def no_console():
     return 0 if ctypes.windll.kernel32.GetConsoleWindow() else subprocess.CREATE_NO_WINDOW
 
 
+def parse_cpu_features(output):
+    """Instruction sets `sacredfire.exe --cpu-features` reports missing ([] when complete)."""
+    for line in output.splitlines():
+        if line.startswith('CPU: missing '):
+            return [name.strip() for name in line[len('CPU: missing '):].split(',') if name.strip()]
+    return []
+
+
+def isa_rewrite_wanted(missing, env):
+    """BB_ISA_REWRITE=1 forces the ISA rewrite table, 0 disables it; otherwise the CPU decides."""
+    policy = env.get('BB_ISA_REWRITE')
+    if policy in ('0', '1'):
+        return policy == '1'
+    return bool(missing)
+
+
 def emit(text):
     sys.stdout.write(text)
     sys.stdout.flush()
@@ -60,7 +76,7 @@ def say(message):
     emit(message + '\n')
 
 
-def run_python(script, *args, capture=False):
+def run_python(script, *args, capture=False, check=True):
     # -X utf8: the embeddable Python of the portable package ignores PYTHONUTF8, and the scripts
     # print the game's title (with its trademark sign) to a pipe.
     command = [sys.executable, '-X', 'utf8', str(PORT / script), *map(str, args)]
@@ -69,9 +85,9 @@ def run_python(script, *args, capture=False):
                             encoding='utf-8', errors='replace', creationflags=no_console())
     if not capture and result.stdout:
         emit(result.stdout)
-    if result.returncode:
+    if check and result.returncode:
         sys.exit(result.returncode)
-    return result.stdout if capture else None
+    return result if capture else None
 
 
 def find_executable(name):
@@ -152,6 +168,14 @@ def main():
         clang64 = Path(env.get('MSYS2_ROOT', r'C:\msys64')) / 'clang64' / 'bin'
         if clang64.is_dir():
             env['PATH'] = f'{clang64}{os.pathsep}{env.get("PATH", "")}'
+    # Instruction sets this CPU lacks (MOVBE, BMI1, LZCNT): the ISA rewrite covers them; exit 20
+    # is a set nothing covers.
+    features = subprocess.run([str(probe), '--cpu-features'], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                              text=True, creationflags=no_console())
+    if features.returncode == 20:
+        print(features.stdout, end='', flush=True)
+        sys.exit(20)
+    missing = parse_cpu_features(features.stdout)
 
     # The output of every launch also goes to last_run.log (an in-game restart appends to it);
     # BB_SAVE_LOG=1 (with frame statistics) writes logs/<time>.log instead.
@@ -188,13 +212,21 @@ def main():
     game = Path(run_python('scripts/mods.py', game, '--out', out,
                            '--mods-dir', env.get('BB_MODS_DIR', data / 'mods'),
                            '--config', env.get('BB_MODS_CONFIG', data / 'mods.json'),
-                           '--enabled', env.get('BB_MODS_ENABLED', '1'), capture=True).strip())
+                           '--enabled', env.get('BB_MODS_ENABLED', '1'), capture=True).stdout.strip())
     mod_view = game if game.resolve() != original_game else None
     try:
         run_python('scripts/prepare.py', game, '--out', out)
         run_python('scripts/link_libc.py', game, '--out', out)
         run_python('scripts/link_modules.py', game, '--out', out, '--modules',
                    'libc.prx', 'libSceFios2.prx', 'libSceNpToolkit2.prx')
+        # A failed rewrite prints its reason and the game starts without the table.
+        isa_args = []
+        if isa_rewrite_wanted(missing, env):
+            result = run_python('scripts/isa_rewrite.py', out / 'boot-linked.bin', '--out', out,
+                                capture=True, check=False)
+            emit(result.stdout)
+            if result.returncode == 0:
+                isa_args = ['--isa-rewrite', str(out / 'isa-rewrite.bin')]
         # Symbol names for the eboot's host-side imports (shadPS4's aerolib list, fetched once).
         run_python('tools/gen_import_names.py', '--out', out)
         # DLC (optional): the player's add-on packages in dlc\ (BB_DLC_DIR), reported installed.
@@ -233,7 +265,7 @@ def main():
         command = [str(probe), str(out / 'boot-linked.bin'), '--import-names', str(out / 'import_names.txt'),
                    '--content-profile', str(out / 'content.bin'), '--patches', str(out / 'patches.bin'),
                    '--app0', str(game), '--user', str(user_dir),
-                   '--timeout', env.get('BB_TIMEOUT', '0'), *args]
+                   '--timeout', env.get('BB_TIMEOUT', '0'), *isa_args, *args]
         first = True
         while True:
             if not first:  # the in-game menu may have changed render_res
