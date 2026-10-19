@@ -360,7 +360,44 @@ static int commit_file(const File *f) {
     return 0;
 }
 /* All operations return >=0 or -(host errno); wrappers adapt the convention. */
+/* ctrnfpc.ini skip_intro=1 (the launcher's "Skip intro videos"): the two logo videos at start,
+ * Activision's (octane_intro_logo_atvi.bk2) and Beenox's (openinglogo.bk2), are reported missing
+ * and the game goes on without them. Read once from BB_CONFIG. */
+static int skip_intro(void) {
+    static int v=-1;
+    if (v>=0) return v;
+    v=0;
+    const char *config=getenv("BB_CONFIG");
+    FILE *f=config && *config ? fopen(config,"r") : NULL;
+    char line[256];
+    while (f && fgets(line,sizeof(line),f)) {
+        const char *p=line;
+        while (*p==' '||*p=='\t') ++p;
+        if (!strncmp(p,"skip_intro",10)) {
+            p+=10;
+            while (*p==' '||*p=='\t') ++p;
+            if (*p=='=') { ++p; while (*p==' '||*p=='\t') ++p; v=*p=='1'; }
+        }
+    }
+    if (f) fclose(f);
+    return v;
+}
+
+static int intro_video(const char *guest) {
+    static const char *const names[]={"octane_intro_logo_atvi.bk2","openinglogo.bk2"};
+    size_t n=strlen(guest);
+    for (size_t i=0;i<sizeof(names)/sizeof(*names);++i) {
+        size_t k=strlen(names[i]);
+        if (n>=k && !strcasecmp(guest+n-k,names[i]) && (n==k || guest[n-k-1]=='/')) return 1;
+    }
+    return 0;
+}
+
 static int64_t do_open(const char *guest,int flags,int mode) {
+    if (intro_video(guest) && skip_intro()) {
+        printf("Runtime: open(%s) -> skipped (skip_intro)\n",guest);
+        return -ENOENT;
+    }
     if (game_path(guest) && (flags & (3|0x8|0x200|0x400|0x800))) return -EROFS;
     char path[1024];
     int e=translate(guest,path,sizeof(path));

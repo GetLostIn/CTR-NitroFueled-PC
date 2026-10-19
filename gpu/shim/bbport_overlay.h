@@ -37,6 +37,9 @@ bool CapturesInput();
 /// SacredFire: true once after the menu's "Rescan controllers" button (bbgpu_pad_rescan_take).
 bool TakePadRescan();
 
+/// Opens the settings menu (any thread): the game Options menu's Graphics tab.
+void OpenMenu();
+
 /// The settings menu is open: the window shows the system cursor over it.
 bool MenuOpen();
 

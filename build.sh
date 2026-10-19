@@ -23,11 +23,11 @@ MINGW*|MSYS*)
     cmake -S gpu -B out/gpu -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBB_PGO=off \
         -DBB_LTO="${BB_LTO:-OFF}" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ >/dev/null
     echo "GPU library and loader: LTO ${BB_LTO:-OFF}"
-    if ! ninja -C out/gpu sacredfire bb-gpu-capabilities ctr-launcher > out/gpu-build.log 2>&1; then
+    if ! ninja -C out/gpu sacredfire bb-gpu-capabilities ctr-launcher ctr-quickstart > out/gpu-build.log 2>&1; then
         grep -v '^\[' out/gpu-build.log | tail -40 >&2
         echo 'Build failed (full log: out/gpu-build.log)' >&2; exit 1
     fi
-    cp out/gpu/sacredfire.exe out/gpu/bb-gpu-capabilities.exe out/gpu/CTR-NitroFueled-PC.exe out/
+    cp out/gpu/sacredfire.exe out/gpu/bb-gpu-capabilities.exe out/gpu/CTR-NitroFueled-Launcher.exe out/gpu/CTR-NitroFueled-PC.exe out/
     version=$(git describe --tags --match 'v*' --always 2>/dev/null || echo unknown)
     printf '%s-windows\n' "$version" > out/VERSION
     echo "Built $PWD/out/sacredfire.exe ($(cat out/VERSION))"

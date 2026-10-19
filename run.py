@@ -246,12 +246,16 @@ def main():
     data = Path(env.get('BB_DATA_DIR', PORT))
     out = data / 'out'
     out.mkdir(parents=True, exist_ok=True)
-    env.setdefault('BB_CONFIG', str(data / 'bbport.ini'))
+    env.setdefault('BB_CONFIG', str(data / 'ctrnfpc.ini'))
+    # ctrnfpc.ini was bbport.ini: an older one is taken over once.
+    if not Path(env['BB_CONFIG']).exists() and (data / 'bbport.ini').is_file():
+        shutil.copyfile(data / 'bbport.ini', env['BB_CONFIG'])
     config = env['BB_CONFIG']
     # A portable package ships bbport.default.ini, so a new version unzipped over an old one keeps
     # the player's bbport.ini.
-    if not Path(config).exists() and (PORT / 'bbport.default.ini').is_file():
-        shutil.copyfile(PORT / 'bbport.default.ini', config)
+    for defaults in ('ctrnfpc.default.ini', 'bbport.default.ini'):
+        if not Path(config).exists() and (PORT / defaults).is_file():
+            shutil.copyfile(PORT / defaults, config)
 
     probe = Path(env['BB_PROBE']) if env.get('BB_PROBE') else find_executable('sacredfire.exe')
     if not probe or not probe.is_file():
@@ -320,7 +324,15 @@ def main():
     game, config = uw_mode.game, uw_mode.config
 
     original_game = game.resolve()
-    game = Path(run_python('scripts/mods.py', game, '--out', out,
+    # The Options menu's Graphics tab (scripts/graphics_tab.py): a relabelled menu archive.
+    replace = []
+    for line in run_python('scripts/graphics_tab.py', game, '--out', out, '--settings', config,
+                           capture=True).stdout.splitlines():
+        if line.startswith('archives/') and '=' in line:
+            replace += ['--replace', line.strip()]
+        elif line.strip():
+            say(line.strip())
+    game = Path(run_python('scripts/mods.py', game, '--out', out, *replace,
                            '--mods-dir', env.get('BB_MODS_DIR', data / 'mods'),
                            '--config', env.get('BB_MODS_CONFIG', data / 'mods.json'),
                            '--enabled', env.get('BB_MODS_ENABLED', '1'), capture=True).stdout.strip())

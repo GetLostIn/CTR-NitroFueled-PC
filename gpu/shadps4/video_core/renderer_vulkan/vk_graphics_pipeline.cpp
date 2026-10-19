@@ -404,6 +404,28 @@ GraphicsPipeline::GraphicsPipeline(
     // In practice, we use dynamic state for all of it.
     constexpr vk::PipelineDepthStencilStateCreateInfo depth_stencil_info = {};
 
+    // Mixed samples (raster samples differ from an attachment's, as CTR's 2x-depth effects over
+    // single-sample colour): NVIDIA merges the coverage of all raster samples that map to the
+    // same attachment sample by default, so two triangles sharing an edge both cover the pixels
+    // along it and translucent meshes blend twice there (dotted lines in skies and light shafts,
+    // GitHub issues #16/#18). VK_AMD_mixed_attachment_samples and the console GPU use only the
+    // matching raster sample: truncate the coverage to do the same. (Fix from the shadPS4
+    // community, r/shadps4 "Crash Team Racing Nitro-Fueled lights glitchs fix".)
+    vk::PipelineCoverageReductionStateCreateInfoNV coverage_reduction = {
+        .coverageReductionMode = vk::CoverageReductionModeNV::eTruncate,
+    };
+    if (instance.IsCoverageReductionModeSupported()) {
+        const u32 raster_samples = static_cast<u32>(sdata.multisampling.rasterizationSamples);
+        bool mixed_samples = key.z_format != AmdGpu::DepthBuffer::ZFormat::Invalid &&
+                             key.depth_samples != 0 && key.depth_samples != raster_samples;
+        for (u32 i = 0; i < key.num_color_attachments; ++i) {
+            mixed_samples |= key.color_samples[i] != 0 && key.color_samples[i] != raster_samples;
+        }
+        if (mixed_samples) {
+            sdata.multisampling.pNext = &coverage_reduction;
+        }
+    }
+
     const vk::GraphicsPipelineCreateInfo pipeline_info = {
         .pNext = &pipeline_rendering_ci,
         .stageCount = static_cast<u32>(shader_stages.size()),
@@ -432,6 +454,8 @@ GraphicsPipeline::GraphicsPipeline(
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create graphics pipeline: {}",
                vk::to_string(pipeline_result));
     pipeline = std::move(pipe);
+    // No pointer to a local left behind in the (serialized) multisample state.
+    sdata.multisampling.pNext = nullptr;
     SetObjectName(device, *pipeline, "Graphics Pipeline {}", debug_str);
 }
 

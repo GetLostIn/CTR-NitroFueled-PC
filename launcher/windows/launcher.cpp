@@ -655,7 +655,7 @@ std::string GameAspect();
 bool UltrawideCacheWarm();
 
 fs::path LauncherIni() { return g_app.root / L"launcher.ini"; }
-fs::path GameIni() { return g_app.root / L"bbport.ini"; }
+fs::path GameIni() { return g_app.root / L"ctrnfpc.ini"; }
 
 void SaveLauncher() {
     App& a = g_app;
@@ -670,7 +670,7 @@ void SaveLauncher() {
 
 void SaveGameIni() {
     if (!g_app.game.Save(GameIni(), "# bbport settings (in-game menu: Insert / L3+R3)")) {
-        g_app.notice = T("No se pudo guardar bbport.ini.", "Could not save bbport.ini.");
+        g_app.notice = T("No se pudo guardar ctrnfpc.ini.", "Could not save ctrnfpc.ini.");
     }
 }
 
@@ -1913,6 +1913,10 @@ void SettingsTab() {
              T("Menos tirones la primera vez que aparece un efecto; a veces un efecto tarda un fotograma en verse.",
                "Fewer hitches when an effect is first seen; an effect may show up a frame late."));
 
+    GameFlag("skip_intro", T("Saltar los vídeos de inicio", "Skip intro videos"), false,
+             T("Sin los logos de Activision y Beenox al arrancar el juego.",
+               "Skips the Activision and Beenox logo videos when the game starts."));
+
     Section(T("Pantalla", "Display"));
     {
         // v0.3 native (by tcosi): ONE dropdown sets aspect + output together, so they
@@ -1976,13 +1980,6 @@ void SettingsTab() {
                      "so the cache is saved. If launching ultrawide still asks for cache, enter a race "
                      "for 30 seconds and exit: that compiles the second HUD shader."));
     }
-    GameFlag("msaa", T("MSAA del juego (2x)", "Game MSAA (2x)"), false,
-             T("El antialiasing 2x de la PS4. Desactivado por defecto: en PC dibuja líneas punteadas en el "
-               "cielo y en los rayos de luz. A resoluciones altas o con FSR/DLSS casi no se nota. "
-               "Requiere reiniciar.",
-               "The PS4's 2x anti-aliasing. Off by default: on PC it draws dotted lines in the sky and "
-               "in light shafts. At high internal resolutions or with FSR/DLSS it is barely missed. "
-               "Needs a restart."));
     const std::string temporal = GameTemporal();
     const std::string aspect_now = GameAspect();
     const bool uw_on = aspect_now != "16:9";
@@ -2713,9 +2710,9 @@ std::vector<std::string> SplitKeys(const std::string& value) {
 void KeyboardTab() {
     App& a = g_app;
     ImGui::TextWrapped("%s", T("Teclas del jugador 1. El teclado funciona a la vez que el mando. Pulsa \"Cambiar\" y luego la "
-                               "tecla; cada acción admite hasta 4 teclas. Se guarda en bbport.ini y vale desde el próximo arranque.",
+                               "tecla; cada acción admite hasta 4 teclas. Se guarda en ctrnfpc.ini y vale desde el próximo arranque.",
                                "Player 1's keys. The keyboard works together with the controller. Press \"Change\", then the key; "
-                               "each action takes up to 4 keys. Saved in bbport.ini, used from the next start."));
+                               "each action takes up to 4 keys. Saved in ctrnfpc.ini, used from the next start."));
     ImGui::TextColored(kGrey, "%s", T("Insert abre el menú del juego y Esc cancela, por eso no se pueden asignar.",
                                       "Insert opens the in-game menu and Esc cancels, so they cannot be bound."));
     const int capturing = g_key_capture;
@@ -3139,9 +3136,9 @@ void ControllersPage() {
     Section(T("Botones del mando", "Controller buttons"));
     ImGui::PushTextWrapPos(0.0f);
     ImGui::TextColored(kGrey, "%s", T("Lo que hace cada botón en el juego, para todos los mandos. Pulsa \"Cambiar\" y luego el botón "
-                                      "en el mando; cada acción admite hasta 4. Se guarda en bbport.ini y vale desde el próximo arranque.",
+                                      "en el mando; cada acción admite hasta 4. Se guarda en ctrnfpc.ini y vale desde el próximo arranque.",
                                       "What each button does in the game, for every controller. Press \"Change\", then the button on "
-                                      "the controller; each action takes up to 4. Saved in bbport.ini, used from the next start."));
+                                      "the controller; each action takes up to 4. Saved in ctrnfpc.ini, used from the next start."));
     ImGui::PopTextWrapPos();
     const Pads::Info* shown = nullptr;
     for (const auto& p : pads)
@@ -4230,9 +4227,12 @@ void LoadState() {
         }
     }
     a.python = FindPython(a.root);
-    // The portable package ships bbport.default.ini (an update unzipped over it keeps bbport.ini).
-    if (!fs::exists(GameIni(), ec) && fs::is_regular_file(a.root / L"bbport.default.ini", ec)) {
-        fs::copy_file(a.root / L"bbport.default.ini", GameIni(), ec);
+    // ctrnfpc.ini was bbport.ini: an older one is taken over once. The portable package ships
+    // ctrnfpc.default.ini (an update unzipped over it keeps ctrnfpc.ini).
+    for (const wchar_t* source : {L"bbport.ini", L"ctrnfpc.default.ini", L"bbport.default.ini"}) {
+        if (!fs::exists(GameIni(), ec) && fs::is_regular_file(a.root / source, ec)) {
+            fs::copy_file(a.root / source, GameIni(), ec);
+        }
     }
     a.launcher.Load(LauncherIni());
     a.game.Load(GameIni());
@@ -4483,7 +4483,59 @@ void LoadLogo(HINSTANCE instance) {
     g_logo = MakeTexture(pixels.data(), px, px);
 }
 
+#ifdef LAUNCHER_QUICKSTART
+/// CTR-NitroFueled-PC.exe: the game with the launcher's saved settings, no launcher window. The
+/// launcher opens instead when the game folder is not set up yet (or Python is missing).
+int QuickStart() {
+    App& a = g_app;
+    a.root = FindRoot();
+    std::error_code ec;
+    a.bin = fs::is_directory(a.root / L"bin", ec) ? a.root / L"bin" : a.root / L"out";
+    a.python = FindPython(a.root);
+    for (const wchar_t* source : {L"bbport.ini", L"ctrnfpc.default.ini", L"bbport.default.ini"}) {
+        if (!fs::exists(GameIni(), ec) && fs::is_regular_file(a.root / source, ec)) {
+            fs::copy_file(a.root / source, GameIni(), ec);
+        }
+    }
+    a.launcher.Load(LauncherIni());
+    a.game.Load(GameIni());
+    const std::string lang = a.launcher.Get("ui_language");
+    g_spanish = lang.empty() ? PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_SPANISH : lang == "es";
+    a.game_dir = TextPath(a.launcher.Get("game_dir"));
+    if (a.game_dir.empty() || Analyze(a.game_dir).kind != Kind::Complete) {
+        a.game_dir.clear();
+        for (const wchar_t* name : {L"CUSA13795-1.21", L"CUSA13795"}) {
+            if (Analyze(a.root / name).kind == Kind::Complete) {
+                a.game_dir = a.root / name;
+                break;
+            }
+        }
+    }
+    if (!a.python || a.game_dir.empty()) {
+        const fs::path launcher = a.root / L"CTR-NitroFueled-Launcher.exe";
+        if (reinterpret_cast<INT_PTR>(ShellExecuteW(nullptr, L"open", launcher.c_str(), nullptr,
+                                                    a.root.c_str(), SW_SHOWNORMAL)) <= 32) {
+            MessageBoxW(nullptr, Widen(T("Prepara el juego con CTR-NitroFueled-Launcher.exe.",
+                                         "Set up the game with CTR-NitroFueled-Launcher.exe.")).c_str(),
+                        L"CTR Nitro-Fueled PC", MB_ICONINFORMATION);
+        }
+        return 0;
+    }
+    StartGame();
+    if (a.worker.joinable()) a.worker.join();
+    if (a.exit_code != 0 && !a.stopped) {
+        MessageBoxW(nullptr, Widen(T("El juego se cerró con un error. Revisa last_run.log.",
+                                     "The game closed with an error. See last_run.log.")).c_str(),
+                    L"CTR Nitro-Fueled PC", MB_ICONWARNING);
+    }
+    return int(a.exit_code);
+}
+#endif
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
+#ifdef LAUNCHER_QUICKSTART
+    return QuickStart();
+#endif
 #ifdef LAUNCHER_SELFTEST
     // Test build only (CMake never defines it): file operations without the window.
     //   --import <folder> <port>, --restore <backup> <port>, --patches <port>; result in <port>\selftest.txt
