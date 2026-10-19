@@ -1913,6 +1913,10 @@ void SettingsTab() {
              T("Menos tirones la primera vez que aparece un efecto; a veces un efecto tarda un fotograma en verse.",
                "Fewer hitches when an effect is first seen; an effect may show up a frame late."));
 
+    GameFlag("skip_intro", T("Saltar los vídeos de inicio", "Skip intro videos"), false,
+             T("Sin los logos de Activision y Beenox al arrancar el juego.",
+               "Skips the Activision and Beenox logo videos when the game starts."));
+
     Section(T("Pantalla", "Display"));
     {
         // v0.3 native (by tcosi): ONE dropdown sets aspect + output together, so they
