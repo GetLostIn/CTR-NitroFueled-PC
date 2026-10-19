@@ -4486,7 +4486,59 @@ void LoadLogo(HINSTANCE instance) {
     g_logo = MakeTexture(pixels.data(), px, px);
 }
 
+#ifdef LAUNCHER_QUICKSTART
+/// CTR-NitroFueled-PC.exe: the game with the launcher's saved settings, no launcher window. The
+/// launcher opens instead when the game folder is not set up yet (or Python is missing).
+int QuickStart() {
+    App& a = g_app;
+    a.root = FindRoot();
+    std::error_code ec;
+    a.bin = fs::is_directory(a.root / L"bin", ec) ? a.root / L"bin" : a.root / L"out";
+    a.python = FindPython(a.root);
+    for (const wchar_t* source : {L"bbport.ini", L"ctrnfpc.default.ini", L"bbport.default.ini"}) {
+        if (!fs::exists(GameIni(), ec) && fs::is_regular_file(a.root / source, ec)) {
+            fs::copy_file(a.root / source, GameIni(), ec);
+        }
+    }
+    a.launcher.Load(LauncherIni());
+    a.game.Load(GameIni());
+    const std::string lang = a.launcher.Get("ui_language");
+    g_spanish = lang.empty() ? PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_SPANISH : lang == "es";
+    a.game_dir = TextPath(a.launcher.Get("game_dir"));
+    if (a.game_dir.empty() || Analyze(a.game_dir).kind != Kind::Complete) {
+        a.game_dir.clear();
+        for (const wchar_t* name : {L"CUSA13795-1.21", L"CUSA13795"}) {
+            if (Analyze(a.root / name).kind == Kind::Complete) {
+                a.game_dir = a.root / name;
+                break;
+            }
+        }
+    }
+    if (!a.python || a.game_dir.empty()) {
+        const fs::path launcher = a.root / L"CTR-NitroFueled-Launcher.exe";
+        if (reinterpret_cast<INT_PTR>(ShellExecuteW(nullptr, L"open", launcher.c_str(), nullptr,
+                                                    a.root.c_str(), SW_SHOWNORMAL)) <= 32) {
+            MessageBoxW(nullptr, Widen(T("Prepara el juego con CTR-NitroFueled-Launcher.exe.",
+                                         "Set up the game with CTR-NitroFueled-Launcher.exe.")).c_str(),
+                        L"CTR Nitro-Fueled PC", MB_ICONINFORMATION);
+        }
+        return 0;
+    }
+    StartGame();
+    if (a.worker.joinable()) a.worker.join();
+    if (a.exit_code != 0 && !a.stopped) {
+        MessageBoxW(nullptr, Widen(T("El juego se cerró con un error. Revisa last_run.log.",
+                                     "The game closed with an error. See last_run.log.")).c_str(),
+                    L"CTR Nitro-Fueled PC", MB_ICONWARNING);
+    }
+    return int(a.exit_code);
+}
+#endif
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
+#ifdef LAUNCHER_QUICKSTART
+    return QuickStart();
+#endif
 #ifdef LAUNCHER_SELFTEST
     // Test build only (CMake never defines it): file operations without the window.
     //   --import <folder> <port>, --restore <backup> <port>, --patches <port>; result in <port>\selftest.txt

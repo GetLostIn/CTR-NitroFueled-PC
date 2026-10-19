@@ -25,7 +25,7 @@ Python ya viene incluido (carpeta python\): no hay que instalar nada.
 
 PUESTA EN MARCHA
 ----------------
-1. Abre CTR-NitroFueled-PC.exe (el launcher).
+1. Abre CTR-NitroFueled-Launcher.exe (el launcher). Después, CTR-NitroFueled-PC.exe arranca el juego directamente con esos ajustes.
 2. En "Juego base" elige tu carpeta CUSA13795 y en "Actualizacion 1.21"
    tu carpeta CUSA13795-patch. Pulsa "Preparar el juego": crea
    CUSA13795-1.21 al lado del juego base con enlaces duros (no ocupa el
@@ -71,7 +71,7 @@ parches del juego; en Guardados, copias de seguridad e importar partidas;
 en DLC, tus paquetes DLC de PS4 (.pkg), opcionales: el juego funciona
 igual sin ellos.
 
-Sin launcher: "Jugar sin launcher.bat" arranca .\CUSA13795-1.21
+Sin launcher: CTR-NitroFueled-PC.exe arranca .\CUSA13795-1.21
 (o la ruta de BB_GAME_DIR).
 
 CONTROLES
@@ -116,7 +116,7 @@ PROBLEMAS COMUNES
 - Tirones la primera vez en cada pista: normal, son shaders nuevos.
 - Pantalla negra con sonido: actualiza drivers Vulkan de tu GPU.
 - El launcher no abre: necesita Direct3D 11 (cualquier GPU actual);
-  usa "Jugar sin launcher.bat".
+  usa CTR-NitroFueled-PC.exe.
 
 Fallos y dudas: https://github.com/GetLostIn/CTR-NitroFueled-PC/issues
 (adjunta last_run.log).

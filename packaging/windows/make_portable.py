@@ -31,7 +31,8 @@ PORTABLE = ROOT / 'packaging' / 'windows' / 'portable'
 MSYS2 = Path(os.environ.get('MSYS2_ROOT', r'C:\msys64'))
 CLANG_BIN = MSYS2 / 'clang64' / 'bin'
 NAME = 'CTR-NitroFueled-PC-portable'
-LAUNCHER = 'CTR-NitroFueled-PC.exe'
+LAUNCHER = 'CTR-NitroFueled-Launcher.exe'
+QUICKSTART = 'CTR-NitroFueled-PC.exe'  # starts the game with the launcher's settings, no window
 # The Python that runs run.py and scripts/ (python.org's "embeddable package": no installer, no
 # registry, no PATH). Pinned by version and SHA-256.
 PYTHON_VERSION = '3.14.8'
@@ -141,7 +142,7 @@ def third_party(dlls, python=None, dlss=False):
               'Q2RTX project from AMD-published FSR 4 source (MIT, Copyright (c) 2025 Advanced',
               'Micro Devices, Inc.; see fsr4_shaders\\LICENSE-FSR4-v07.txt), run through',
               'https://github.com/FireBurn/FSR-Vulkan (MIT).', '']
-    lines += ['The launcher (CTR-NitroFueled-PC.exe) and sacredfire.exe include Dear ImGui (MIT,',
+    lines += ['The launcher (CTR-NitroFueled-Launcher.exe, CTR-NitroFueled-PC.exe) and sacredfire.exe include Dear ImGui (MIT,',
               'https://github.com/ocornut/imgui) and the other libraries listed in the repository.', '']
     lines += ['The game files are not included and are not covered by any of these licenses.',
               'Not affiliated with Sony, Activision or Beenox.', '']
@@ -211,7 +212,8 @@ def main():
                 sys.exit(f'{f} not found (dlss_bridge\\build.bat builds the bridge)')
     exe, caps = ROOT / 'out' / 'sacredfire.exe', ROOT / 'out' / 'bb-gpu-capabilities.exe'
     launcher = ROOT / 'out' / LAUNCHER
-    for f in (exe, caps, launcher):
+    quickstart = ROOT / 'out' / QUICKSTART
+    for f in (exe, caps, launcher, quickstart):
         if not f.is_file():
             sys.exit(f'{f} not found: build with build.sh first')
     folder = a.dist / NAME
@@ -235,6 +237,7 @@ def main():
         write_text(folder / 'licenses' / 'dlss-bridge-LICENSE.txt',
                    (ROOT / 'dlss_bridge' / 'LICENSE.txt').read_text(encoding='utf-8'))
     shutil.copy2(launcher, folder)
+    shutil.copy2(quickstart, folder)
     python = bundle_python(folder, a.dist / 'pycache')
     bundle_iced_x86(folder, a.dist / 'pycache')
     shutil.copy2(ROOT / 'run.py', folder)
@@ -264,7 +267,6 @@ def main():
     # bbport.default.ini, not bbport.ini: unzipping a new version over an old one keeps the
     # player's settings (run.py and the launcher copy the defaults when bbport.ini is missing).
     for source, target in (('bbport.default.ini', 'ctrnfpc.default.ini'),
-                           ('Jugar CTR Nitro-Fueled.bat', 'Jugar sin launcher.bat'),
                            ('LEEME.txt', 'LEEME.txt')):
         write_text(folder / target, (PORTABLE / source).read_text(encoding='utf-8'))
     write_text(folder / 'LICENSE', (ROOT / 'LICENSE').read_text(encoding='utf-8'))
