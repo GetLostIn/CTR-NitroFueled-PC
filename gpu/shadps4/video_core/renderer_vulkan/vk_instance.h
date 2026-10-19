@@ -288,6 +288,12 @@ public:
         return amd_mixed_attachment_samples;
     }
 
+    /// Returns true if VK_NV_coverage_reduction_mode is supported. It allows selecting how the
+    /// coverage of raster samples is mapped to attachments with fewer samples.
+    bool IsCoverageReductionModeSupported() const {
+        return nv_coverage_reduction_mode;
+    }
+
     /// Returns true when geometry shaders are supported by the device
     bool IsGeometryStageSupported() const {
         return features.geometryShader;
@@ -592,6 +598,7 @@ private:
     bool amd_gcn_shader{};
     bool amd_shader_trinary_minmax{};
     bool nv_framebuffer_mixed_samples{};
+    bool nv_coverage_reduction_mode{};
     bool amd_mixed_attachment_samples{};
     bool shader_atomic_float{};
     bool shader_atomic_float2{};
