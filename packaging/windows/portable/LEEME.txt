@@ -93,13 +93,13 @@ Menu del port (parches 60 FPS, sin motion blur, resolucion interna, escalado
 FSR 1 / FSR 3 / DLSS, limite FPS hasta 240, pantalla completa, FPS, idioma del
 menu): tecla Insert o L3+R3. "Apply and restart" reinicia solo.
 Por defecto arranca en ventana y a 60 FPS; la pantalla completa y el limite de FPS
-(60/72/144/240...) se cambian en ese menu y se guardan en bbport.ini.
+(60/72/144/240...) se cambian en ese menu y se guardan en ctrnfpc.ini.
 
 ARCHIVOS QUE GENERA
 -------------------
 user\           partidas guardadas y cache de shaders
-bbport.ini      ajustes del juego (los mismos que el menu Insert); se crea
-                desde bbport.default.ini la primera vez
+ctrnfpc.ini      ajustes del juego (los mismos que el menu Insert); se crea
+                desde ctrnfpc.default.ini la primera vez
 ACTUALIZAR: descomprime la version nueva encima de esta carpeta; tus
 ajustes, partidas, DLC y la carpeta del juego se conservan.
 launcher.ini    ajustes del launcher (carpetas del juego, idioma...)

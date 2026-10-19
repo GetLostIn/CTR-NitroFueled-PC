@@ -1034,8 +1034,8 @@ void Menu() {
         quit_armed = false;
     }
     ImGui::SameLine();
-    ImGui::TextDisabled("%s", BbSettings::MenuText("Settings are saved to bbport.ini",
-                                             "Настройки сохраняются в bbport.ini"));
+    ImGui::TextDisabled("%s", BbSettings::MenuText("Settings are saved to ctrnfpc.ini",
+                                             "Настройки сохраняются в ctrnfpc.ini"));
     ImGui::End();
     if (!keep_open) {
         SetOpen(false);

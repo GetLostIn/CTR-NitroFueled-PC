@@ -17,7 +17,7 @@ namespace {
 
 const char* Path() {
     const char* env = std::getenv("BB_CONFIG");
-    return env && env[0] ? env : "bbport.ini";
+    return env && env[0] ? env : "ctrnfpc.ini";
 }
 
 float Clamp(float v, float lo, float hi) {

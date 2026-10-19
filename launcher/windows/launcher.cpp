@@ -655,7 +655,7 @@ std::string GameAspect();
 bool UltrawideCacheWarm();
 
 fs::path LauncherIni() { return g_app.root / L"launcher.ini"; }
-fs::path GameIni() { return g_app.root / L"bbport.ini"; }
+fs::path GameIni() { return g_app.root / L"ctrnfpc.ini"; }
 
 void SaveLauncher() {
     App& a = g_app;
@@ -670,7 +670,7 @@ void SaveLauncher() {
 
 void SaveGameIni() {
     if (!g_app.game.Save(GameIni(), "# bbport settings (in-game menu: Insert / L3+R3)")) {
-        g_app.notice = T("No se pudo guardar bbport.ini.", "Could not save bbport.ini.");
+        g_app.notice = T("No se pudo guardar ctrnfpc.ini.", "Could not save ctrnfpc.ini.");
     }
 }
 
@@ -2713,9 +2713,9 @@ std::vector<std::string> SplitKeys(const std::string& value) {
 void KeyboardTab() {
     App& a = g_app;
     ImGui::TextWrapped("%s", T("Teclas del jugador 1. El teclado funciona a la vez que el mando. Pulsa \"Cambiar\" y luego la "
-                               "tecla; cada acción admite hasta 4 teclas. Se guarda en bbport.ini y vale desde el próximo arranque.",
+                               "tecla; cada acción admite hasta 4 teclas. Se guarda en ctrnfpc.ini y vale desde el próximo arranque.",
                                "Player 1's keys. The keyboard works together with the controller. Press \"Change\", then the key; "
-                               "each action takes up to 4 keys. Saved in bbport.ini, used from the next start."));
+                               "each action takes up to 4 keys. Saved in ctrnfpc.ini, used from the next start."));
     ImGui::TextColored(kGrey, "%s", T("Insert abre el menú del juego y Esc cancela, por eso no se pueden asignar.",
                                       "Insert opens the in-game menu and Esc cancels, so they cannot be bound."));
     const int capturing = g_key_capture;
@@ -3139,9 +3139,9 @@ void ControllersPage() {
     Section(T("Botones del mando", "Controller buttons"));
     ImGui::PushTextWrapPos(0.0f);
     ImGui::TextColored(kGrey, "%s", T("Lo que hace cada botón en el juego, para todos los mandos. Pulsa \"Cambiar\" y luego el botón "
-                                      "en el mando; cada acción admite hasta 4. Se guarda en bbport.ini y vale desde el próximo arranque.",
+                                      "en el mando; cada acción admite hasta 4. Se guarda en ctrnfpc.ini y vale desde el próximo arranque.",
                                       "What each button does in the game, for every controller. Press \"Change\", then the button on "
-                                      "the controller; each action takes up to 4. Saved in bbport.ini, used from the next start."));
+                                      "the controller; each action takes up to 4. Saved in ctrnfpc.ini, used from the next start."));
     ImGui::PopTextWrapPos();
     const Pads::Info* shown = nullptr;
     for (const auto& p : pads)
@@ -4230,9 +4230,12 @@ void LoadState() {
         }
     }
     a.python = FindPython(a.root);
-    // The portable package ships bbport.default.ini (an update unzipped over it keeps bbport.ini).
-    if (!fs::exists(GameIni(), ec) && fs::is_regular_file(a.root / L"bbport.default.ini", ec)) {
-        fs::copy_file(a.root / L"bbport.default.ini", GameIni(), ec);
+    // ctrnfpc.ini was bbport.ini: an older one is taken over once. The portable package ships
+    // ctrnfpc.default.ini (an update unzipped over it keeps ctrnfpc.ini).
+    for (const wchar_t* source : {L"bbport.ini", L"ctrnfpc.default.ini", L"bbport.default.ini"}) {
+        if (!fs::exists(GameIni(), ec) && fs::is_regular_file(a.root / source, ec)) {
+            fs::copy_file(a.root / source, GameIni(), ec);
+        }
     }
     a.launcher.Load(LauncherIni());
     a.game.Load(GameIni());

@@ -64,7 +64,7 @@ const char* Spanish(const char* english) {
     {"Close", "Cerrar"},
     {"Press again to quit", "Pulsa otra vez para salir"},
     {"Quit game", "Salir del juego"},
-    {"Settings are saved to bbport.ini", "Los ajustes se guardan en bbport.ini"},
+    {"Settings are saved to ctrnfpc.ini", "Los ajustes se guardan en ctrnfpc.ini"},
     {"%.0f FPS  %.1f ms  %s", "%.0f FPS  %.1f ms  %s"},
     {"Optical flow (recommended)", "Flujo óptico (recomendado)"},
     {"Game motion + optical flow", "Movimiento del juego + flujo óptico"},

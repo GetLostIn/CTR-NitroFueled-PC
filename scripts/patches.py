@@ -268,7 +268,7 @@ def main():
     p.add_argument('--app-version',default=APP_VERSION)
     p.add_argument('--title-id',default=TITLE_ID,help='the game (patch files naming other ids are skipped)')
     p.add_argument('--out',type=Path,default=root/'out')
-    p.add_argument('--settings',type=Path,default=root/'bbport.ini')
+    p.add_argument('--settings',type=Path,default=root/'ctrnfpc.ini')
     p.add_argument('--external-only',action='store_true',help='accepted for older callers (the only mode)')
     a=p.parse_args()
     elf=(a.out/'eboot.elf').read_bytes()

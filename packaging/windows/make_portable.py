@@ -263,7 +263,7 @@ def main():
     # The launcher sets up the game folder and starts it; the .bat is the way without it.
     # bbport.default.ini, not bbport.ini: unzipping a new version over an old one keeps the
     # player's settings (run.py and the launcher copy the defaults when bbport.ini is missing).
-    for source, target in (('bbport.default.ini', 'bbport.default.ini'),
+    for source, target in (('bbport.default.ini', 'ctrnfpc.default.ini'),
                            ('Jugar CTR Nitro-Fueled.bat', 'Jugar sin launcher.bat'),
                            ('LEEME.txt', 'LEEME.txt')):
         write_text(folder / target, (PORTABLE / source).read_text(encoding='utf-8'))
