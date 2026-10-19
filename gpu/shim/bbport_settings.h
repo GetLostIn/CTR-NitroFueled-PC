@@ -129,6 +129,9 @@ struct Values {
     /// (vk_graphics_pipeline.cpp, VK_NV_coverage_reduction_mode). Read once at start;
     /// BB_NO_MSAA=1/0 overrides it. AmdGpu::BbNoMsaa() is the switch the renderer reads.
     std::atomic<bool> msaa{true};
+    /// The game's Options menu gets a "Graphics" tab (the hidden Language Select tab, relabelled
+    /// by scripts/graphics_tab.py) that opens this settings menu. Read once at start.
+    std::atomic<bool> graphics_tab{true};
     /// SacredFire: exclusive fullscreen on the game's display (BB_DISPLAY). Applies at once;
     /// BB_FULLSCREEN=1 at start. Saved to bbport.ini by the menu.
     std::atomic<bool> fullscreen{false};

@@ -58,6 +58,8 @@ namespace {
 std::mutex imgui_mutex; // the ImGui context: window thread (input) and present thread
 bool initialized = false;
 std::atomic<bool> menu_open{false};
+// OpenMenu (a game thread: the Options menu's Graphics tab): opened on the window thread.
+std::atomic<bool> open_request{false};
 std::atomic<bool> pad_rescan_requested{false}; // SacredFire: the menu's "Rescan controllers"
 bool l3_down = false, r3_down = false;
 bool dirty = false; // settings changed while open: saved on close
@@ -1228,6 +1230,12 @@ void Init(const Vulkan::Instance& instance, vk::Format format, u32 image_count) 
 }
 
 void UpdateTextInput(SDL_Window* window) {
+    if (open_request.exchange(false)) {
+        std::scoped_lock lock{imgui_mutex};
+        if (initialized) {
+            SetOpen(true);
+        }
+    }
     bool want = false;
     {
         std::scoped_lock lock{imgui_mutex};
@@ -1356,6 +1364,10 @@ void Notify(const std::string& title, const std::string& name, const std::string
     if (notices.size() < 16) {
         notices.push_back(std::move(n));
     }
+}
+
+void OpenMenu() {
+    open_request = true;
 }
 
 bool MenuOpen() {
