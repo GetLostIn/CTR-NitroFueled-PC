@@ -2,6 +2,12 @@
 set -euo pipefail
 cd -- "$(dirname -- "$0")"
 mkdir -p out
+psn_contract_tests() {
+    cmake -S tests/psn -B out/native-psn-tests -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+        -DCMAKE_C_COMPILER="$1"
+    cmake --build out/native-psn-tests
+    ctest --test-dir out/native-psn-tests --output-on-failure
+}
 # Windows: MSYS2 CLANG64 (packages in packaging/windows/README.md). The GPU library is static
 # there and CMake links sacredfire.exe as well; no PGO (GCC-only flags), LTO off by default.
 case $(uname -s) in
@@ -31,6 +37,7 @@ MINGW*|MSYS*)
     version=$(git describe --tags --match 'v*' --always 2>/dev/null || echo unknown)
     printf '%s-windows\n' "$version" > out/VERSION
     echo "Built $PWD/out/sacredfire.exe ($(cat out/VERSION))"
+    if [[ ${1:-} == --test ]]; then psn_contract_tests clang; fi
     exit 0
     ;;
 esac
@@ -94,8 +101,8 @@ if ! ninja -C out/gpu bbgpu > out/gpu-build.log 2>&1; then
     echo 'GPU library build failed (full log: out/gpu-build.log)' >&2; exit 1
 fi
 # $ORIGIN/gpu: packaged copies keep the library next to the binary without patching it.
-gpu=(-Lout/gpu -lbbgpu -Wl,-rpath,'$ORIGIN/gpu' -Wl,-rpath,"$PWD/out/gpu" -rdynamic)
-runtime=(src/runtime*.c)
+gpu=(-Lout/gpu -lbbgpu -Wl,-rpath,'$ORIGIN/gpu' -Wl,-rpath,"$PWD/out/gpu" -rdynamic -ldl)
+runtime=(src/runtime*.c platform/psn/psn_host.c platform/psn/psn_identity.c platform/psn/psn_webapi.c)
 # Third-party decoders: compiled once, without this project's -Werror policy.
 atrac9=(third_party/LibAtrac9/C/src/*.c)
 if [[ ! -f out/libatrac9.a || -n $(find third_party/LibAtrac9/C/src -newer out/libatrac9.a -name '*.c') ]]; then
@@ -117,6 +124,7 @@ echo "Version: $version (out/VERSION)"
 # GPU check for run.sh (live_resolution=auto) and the launcher's gamepad list (--gamepads).
 "$CC" -std=c11 -O2 -Wall -Wextra -Werror "${includes[@]}" tools/gpu_capabilities.c "${libraries[@]}" -o out/bb-gpu-capabilities
 if [[ ${1:-} == --test ]]; then
+    psn_contract_tests "$CC"
     "$CC" -std=c11 -O2 -g -Wall -Wextra -Werror -pthread "${includes[@]}" -I. -Isrc tests/test_pad.c "${libraries[@]}" -o out/pad-test
     out/pad-test
     "$CC" -std=c11 -O2 -g -Wall -Wextra -Werror -pthread -I. -Isrc tests/test_runtime.c "${runtime[@]}" out/libatrac9.a -lm "${gpu[@]}" "${libraries[@]}" -o out/runtime-test

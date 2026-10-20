@@ -13,6 +13,10 @@ the PS4 GPU work to Vulkan. This fork adds the Windows layer (loader, memory, TL
 files, timers) from Supermedo's Windows port of bbport, plus the fixes SacredFire needed on top
 of it: see [packaging/windows/README.md](packaging/windows/README.md).
 
+Platform integrations can use the optional [PSN backend interface](docs/sacredfire/psn-host-backend.md).
+It preserves the existing offline and private-server behavior unless an external
+backend is explicitly selected; backends build independently of the port.
+
 > **No game files are included.** You need your own dump of the game and its 1.21 update.
 > Both builds of the 1.21 update work: the one for firmware 5.05 (the reference) and the one for
 > 6.72+ (since v0.2.1).

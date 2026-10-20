@@ -2,6 +2,13 @@
 
 Updated 2026-10-09.
 
+## Optional platform integration
+
+An opt-in [PSN backend interface](psn-host-backend.md) adds provider-owned identity,
+platform requests and notifications without replacing the normal offline or
+private-server paths. The standalone and native integration suites use fixtures;
+they do not constitute live online acceptance.
+
 ## Milestones
 
 | milestone | state |
