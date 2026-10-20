@@ -6,6 +6,7 @@
  * Every entry here is an explicit contract; unknown functions still stop. */
 #define _GNU_SOURCE
 #include "runtime.h"
+#include "runtime_psn.h"
 #include "gpu/bbgpu.h"
 #include "ctr_trophies.h"
 #include <stdio.h>
@@ -116,9 +117,18 @@ static ABI int32_t system_param(int32_t id,int32_t *value) {
 static ABI int32_t system_status(unsigned char *status) {
     if (!status) return SYSTEM_PARAMETER;
     memset(status,0,12); /* event_num=0, no overlay, foreground, normal CPU mode */
+    if (runtime_psn_selected()) {
+        int32_t count=runtime_psn_system_count();
+        if (count<0) return count;
+        memcpy(status,&count,sizeof(count));
+    }
     return 0;
 }
-static ABI int32_t system_event(void *event) { (void)event; return SYSTEM_NO_EVENT; }
+static ABI int32_t system_event(void *event) {
+    if (runtime_psn_selected()) return runtime_psn_system_receive(event);
+    (void)event;
+    return SYSTEM_NO_EVENT;
+}
 static ABI int32_t hide_splash(void) { note("SystemService: splash screen hidden"); return 0; }
 static ABI int32_t launch_browser(void) { note("SystemService: web browser request ignored (offline)"); return 0; }
 

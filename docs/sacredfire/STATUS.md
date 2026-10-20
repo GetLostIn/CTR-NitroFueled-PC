@@ -17,6 +17,13 @@ Settings, frame generation).
   `patches.json` fallback. Outputs 2560x1080, 3440x1440, 5120x1440 added.
 - Game languages of CUSA13795; PS4 PKG Tool dumps; fullscreen fix. See notas-v0.3.md.
 
+## Optional platform integration
+
+An opt-in [PSN backend interface](psn-host-backend.md) adds provider-owned identity,
+platform requests and notifications without replacing the normal offline or
+private-server paths. The standalone and native integration suites use fixtures;
+they do not constitute live online acceptance.
+
 ## Milestones
 
 | milestone | state |
