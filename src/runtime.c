@@ -1,6 +1,7 @@
 /* Narrow, explicit PS4 libc contracts. No automatic success stubs. */
 #define _CRT_RAND_S
 #include "runtime.h"
+#include "runtime_psn.h"
 #include "gpu/bbgpu.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,6 +70,10 @@ static ABI void *guest_tls_get_addr(const uint64_t *index) {
 }
 
 void runtime_start(uint64_t flags) {
+    if (runtime_psn_start() != 0) {
+        fputs("STOP: the explicitly selected PSN backend is unavailable.\n", stderr);
+        exit(21);
+    }
     capabilities = flags;
     if (!(flags & 1)) return;
 #ifdef _WIN32
@@ -255,6 +260,8 @@ uintptr_t runtime_resolve(const char *name, int is_data) {
     if (memory) return memory;
     uintptr_t kernel = runtime_kernel_resolve(name);
     if (kernel) return kernel;
+    uintptr_t psn = runtime_psn_resolve(name);
+    if (psn) return psn;
     uintptr_t net = runtime_net_resolve(name);
     if (net) return net;
     uintptr_t services = runtime_services_resolve(name);
