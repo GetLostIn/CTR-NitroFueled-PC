@@ -55,7 +55,7 @@ The library has been tested successfully with *Visual C++ 2005* - *2015*, *gcc 4
 Documentation												{#doc}
 =============
 
-What follows are some general words about the usage of the library and its implementation. For a complete reference documentation of its iterface you should consult the [API Documentation](usergroup0.html).
+What follows are some general words about the usage of the library and its implementation. For a complete reference documentation of its interface you should consult the [API Documentation](usergroup0.html).
 
 
 Basic usage													{#usage}
