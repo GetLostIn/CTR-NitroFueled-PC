@@ -99,7 +99,7 @@ sampled textures, and the first 1 KiB of bound constants for small passes and fi
 | game AA | ping-pong RGBA8 1920x1080 after tonemap (to be skipped when upscaling) |
 | UI | stencil-masked draws over the same RGBA8 target |
 
-There is no velocity buffer, also with the camera moving: motion vectors are computed.
+There is no velocity buffer, even with the camera moving: motion vectors are computed.
 
 ## Scene constants (864 bytes, bound by most passes)
 
