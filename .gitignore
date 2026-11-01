@@ -68,3 +68,4 @@ gpu/shim/bbport_gnm_table.inc
 friends_migrated.txt
 last_run*.log
 sessions/
+desktop.ini
