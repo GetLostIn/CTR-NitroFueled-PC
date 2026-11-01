@@ -29,14 +29,18 @@ SUPPORTED = {
     '2f2115893ac6656925d20a0221f118cff398fbd754cb9c10154451411dbcf8e6': dict(
         name='ctr', title='CUSA13795', version='01.21', game='Crash Team Racing Nitro-Fueled', update='CUSA13795-patch',
         modules=('libc.prx', 'libSceFios2.prx', 'libSceNpToolkit2.prx'), patches=True),
+    '6b93d1f682fbfc5340dfd08360c8c0522a40f34585ec525c41537c40772bb39c': dict(
+        name='ctr', title='CUSA14876', version='01.21', game='Crash Team Racing Nitro-Fueled (EU)', update='CUSA14876-patch',
+        modules=('libc.prx', 'libSceFios2.prx', 'libSceNpToolkit2.prx'), patches=True),
 }
 BY_TITLE = {p['title']: p for p in SUPPORTED.values()}
-# Editions accepted by title at any version, whatever their executable (untested).
+# Editions accepted by title at any version, whatever their executable.
 EXPERIMENTAL = {
     'CUSA14876': dict(
         name='ctr', title='CUSA14876', version='01.21', game='Crash Team Racing Nitro-Fueled (EU)', update='CUSA14876-patch',
-        modules=('libc.prx', 'libSceFios2.prx', 'libSceNpToolkit2.prx'), patches=False),
+        modules=('libc.prx', 'libSceFios2.prx', 'libSceNpToolkit2.prx'), patches=True),
 }
+EDITIONS = EXPERIMENTAL
 # Images that are known NOT to be 1.21: the base game's executable (1.00). With a 1.21 param.sfo
 # these mean the update's eboot.bin was not copied in.
 OLD_IMAGES = {
@@ -139,7 +143,8 @@ def problem(game, image_hash=None):
         info = {}
     title, version = info.get('TITLE_ID', '?'), info.get('APP_VER', '?')
     if title in EXPERIMENTAL:
-        return None
+        damaged = damaged_archives(game)
+        return ('damaged_archives', title, version) if damaged else None
     try:
         image_hash = image_hash or image_sha256(game)
     except (OSError, ValueError, IndexError, StopIteration, KeyError):

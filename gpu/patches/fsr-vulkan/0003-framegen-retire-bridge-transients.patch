@@ -1,0 +1,36 @@
+From: bbport
+Subject: [PATCH] 3.1.6 frame generation: retire bridge transients per frame
+
+The 3.1.6 frame-generation wrapper never advanced the shared bridge frame id
+nor retired its per-dispatch transient descriptor sets and constant buffers (the
+3.1.5 upscaler wrapper does both). Every Prepare+Dispatch leaked them until the
+device ran out of memory in a continuous session. Mirror the upscaler: tag the
+frame on Prepare, retire it in RetireFrame.
+
+---
+diff --git a/src/ffx_vk_fsr3_3_1_6_framegen.cpp b/src/ffx_vk_fsr3_3_1_6_framegen.cpp
+index 9636cec..8d84fb1 100644
+--- a/src/ffx_vk_fsr3_3_1_6_framegen.cpp
++++ b/src/ffx_vk_fsr3_3_1_6_framegen.cpp
+@@ -463,6 +463,10 @@ ffxVkFsr3_3_1_6FrameGenerationContextRecordPrepare(
+         !valid_image(info->depth, VK_FORMAT_R32_SFLOAT, info->renderWidth, info->renderHeight, false) ||
+         !valid_motion_image(info->motionVectors, info->renderWidth, info->renderHeight))
+         return FFX_VK_FSR3_3_1_6_FRAMEGEN_ERROR_INVALID_ARGUMENT;
++    // bbport: tag this frame's transient descriptor sets and constant buffers, like
++    // the 3.1.5 upscaler wrapper does, so RetireFrame below can free them per frame.
++    // Without this every dispatch leaked them until the device ran out of memory.
++    ffxVkFsr3_3_1_5BridgeBeginFrame(context->bridge, info->frameId);
+     if (!context->initialized) {
+         const OwnedSharedImage shared[] = {
+             context->opticalFlowVector, context->opticalFlowScd, context->dilatedDepth,
+@@ -656,6 +660,10 @@ ffxVkFsr3_3_1_6FrameGenerationContextRetireFrame(
+ {
+     if (!context)
+         return FFX_VK_FSR3_3_1_6_FRAMEGEN_ERROR_INVALID_ARGUMENT;
++    // bbport: free the transient descriptor sets and constant buffers recorded
++    // through completedFrameId (see above); call only after the submission that
++    // recorded them completed on the GPU.
++    ffxVkFsr3_3_1_5BridgeRetireFrame(context->bridge, completedFrameId);
+     if (context->prepared && context->frameId <= completedFrameId) {
+         for (const FfxVkFsr3_3_1_5Resource resource : context->pendingImports)
+             ffxVkFsr3_3_1_5BridgeReleaseImportedImage(context->bridge, resource);

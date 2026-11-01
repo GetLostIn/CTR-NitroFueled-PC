@@ -174,6 +174,127 @@ void EndCard() {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Custom Racing UI Themes (Nitro Flame, Oxide Neon, Aku Crimson, Midnight Cobalt)
+
+struct UiTheme {
+    const char* name_en;
+    const char* name_es;
+    ImVec4 win_bg;
+    ImVec4 nav_bg;
+    ImVec4 content_bg;
+    ImVec4 popup_bg;
+    ImVec4 titlebar_bg;
+    ImVec4 frame_bg;
+    ImVec4 frame_hover;
+    ImVec4 frame_active;
+    ImVec4 button_bg;
+    ImVec4 button_hover;
+    ImVec4 button_active;
+    ImVec4 accent;        // Primary flame/neon accent
+    ImVec4 accent_alt;    // Secondary gold/highlight accent
+    ImVec4 border;
+};
+
+int g_ui_theme = 0;
+
+constexpr UiTheme kThemes[4] = {
+    // 0: Nitro Flame (Obsidian Carbon + Nitro Orange & Trophy Gold)
+    {"Nitro Flame", "Llama Nitro",
+     {0.055f, 0.063f, 0.086f, 1.00f},
+     {0.067f, 0.075f, 0.106f, 0.92f},
+     {0.082f, 0.094f, 0.129f, 0.90f},
+     {0.075f, 0.086f, 0.118f, 0.98f},
+     {0.047f, 0.055f, 0.075f, 1.00f},
+     {0.125f, 0.141f, 0.192f, 0.92f},
+     {0.180f, 0.200f, 0.267f, 1.00f},
+     {0.235f, 0.255f, 0.333f, 1.00f},
+     {0.165f, 0.180f, 0.243f, 0.96f},
+     {0.920f, 0.380f, 0.090f, 1.00f},
+     {1.000f, 0.560f, 0.140f, 1.00f},
+     {1.000f, 0.420f, 0.100f, 1.00f},
+     {1.000f, 0.740f, 0.180f, 1.00f},
+     {1.000f, 0.520f, 0.160f, 0.32f}},
+    // 1: Oxide Neon (Deep Void + Toxic Emerald & Hyper Teal)
+    {"Oxide Neon", "Neón Oxide",
+     {0.047f, 0.059f, 0.082f, 1.00f},
+     {0.059f, 0.078f, 0.106f, 0.92f},
+     {0.071f, 0.098f, 0.129f, 0.90f},
+     {0.063f, 0.086f, 0.114f, 0.98f},
+     {0.039f, 0.051f, 0.071f, 1.00f},
+     {0.106f, 0.149f, 0.192f, 0.92f},
+     {0.145f, 0.216f, 0.267f, 1.00f},
+     {0.184f, 0.275f, 0.333f, 1.00f},
+     {0.129f, 0.184f, 0.235f, 0.96f},
+     {0.120f, 0.760f, 0.420f, 1.00f},
+     {0.200f, 0.900f, 0.520f, 1.00f},
+     {0.180f, 0.900f, 0.450f, 1.00f},
+     {0.000f, 0.850f, 0.750f, 1.00f},
+     {0.180f, 0.900f, 0.450f, 0.32f}},
+    // 2: Aku Crimson (Volcanic Dark + Aku Ruby & Ancient Gold)
+    {"Aku Crimson", "Carmesí Aku",
+     {0.075f, 0.047f, 0.059f, 1.00f},
+     {0.094f, 0.059f, 0.075f, 0.92f},
+     {0.114f, 0.075f, 0.094f, 0.90f},
+     {0.102f, 0.067f, 0.082f, 0.98f},
+     {0.063f, 0.039f, 0.051f, 1.00f},
+     {0.176f, 0.114f, 0.141f, 0.92f},
+     {0.243f, 0.157f, 0.192f, 1.00f},
+     {0.310f, 0.200f, 0.243f, 1.00f},
+     {0.212f, 0.137f, 0.169f, 0.96f},
+     {0.880f, 0.180f, 0.280f, 1.00f},
+     {1.000f, 0.280f, 0.380f, 1.00f},
+     {1.000f, 0.220f, 0.320f, 1.00f},
+     {1.000f, 0.760f, 0.220f, 1.00f},
+     {1.000f, 0.260f, 0.360f, 0.34f}},
+    // 3: Midnight Cobalt (Deep Slate Navy + Electric Cyan & Plasma Amber)
+    {"Midnight Cobalt", "Cobalto Nocturno",
+     {0.047f, 0.071f, 0.118f, 1.00f},
+     {0.059f, 0.090f, 0.149f, 0.92f},
+     {0.075f, 0.114f, 0.184f, 0.90f},
+     {0.067f, 0.102f, 0.165f, 0.98f},
+     {0.039f, 0.059f, 0.098f, 1.00f},
+     {0.114f, 0.169f, 0.267f, 0.92f},
+     {0.157f, 0.231f, 0.357f, 1.00f},
+     {0.200f, 0.294f, 0.443f, 1.00f},
+     {0.141f, 0.208f, 0.322f, 0.96f},
+     {0.180f, 0.560f, 0.960f, 1.00f},
+     {0.280f, 0.680f, 1.000f, 1.00f},
+     {0.240f, 0.660f, 1.000f, 1.00f},
+     {1.000f, 0.680f, 0.200f, 1.00f},
+     {0.240f, 0.660f, 1.000f, 0.34f}},
+};
+
+const UiTheme& CurrentTheme() {
+    return kThemes[std::clamp(g_ui_theme, 0, 3)];
+}
+
+void ApplyUiTheme() {
+    if (!ImGui::GetCurrentContext()) return;
+    const UiTheme& th = CurrentTheme();
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.Colors[ImGuiCol_Text] = ImVec4(0.95f, 0.96f, 0.98f, 1.0f);
+    style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.64f, 0.72f, 1.0f);
+    style.Colors[ImGuiCol_WindowBg] = th.win_bg;
+    style.Colors[ImGuiCol_ChildBg] = th.nav_bg;
+    style.Colors[ImGuiCol_PopupBg] = th.popup_bg;
+    style.Colors[ImGuiCol_Border] = th.border;
+    style.Colors[ImGuiCol_FrameBg] = th.frame_bg;
+    style.Colors[ImGuiCol_FrameBgHovered] = th.frame_hover;
+    style.Colors[ImGuiCol_FrameBgActive] = th.frame_active;
+    style.Colors[ImGuiCol_Button] = th.button_bg;
+    style.Colors[ImGuiCol_ButtonHovered] = th.button_hover;
+    style.Colors[ImGuiCol_ButtonActive] = th.button_active;
+    style.Colors[ImGuiCol_CheckMark] = th.accent_alt;
+    style.Colors[ImGuiCol_SliderGrab] = th.accent;
+    style.Colors[ImGuiCol_SliderGrabActive] = th.accent_alt;
+    style.Colors[ImGuiCol_Header] = ImVec4(th.accent.x, th.accent.y, th.accent.z, 0.28f);
+    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(th.accent.x, th.accent.y, th.accent.z, 0.48f);
+    style.Colors[ImGuiCol_HeaderActive] = ImVec4(th.accent.x, th.accent.y, th.accent.z, 0.68f);
+    style.Colors[ImGuiCol_Separator] = th.border;
+    style.Colors[ImGuiCol_PlotHistogram] = th.accent;
+}
+
+// ---------------------------------------------------------------------------------------------
 // Language: Spanish or English, chosen in the launcher (default: Windows' language).
 
 bool g_spanish = false;
@@ -776,6 +897,7 @@ void SaveLauncher() {
     a.launcher.Set("base_dir", PathText(a.base_dir));
     a.launcher.Set("update_dir", PathText(a.update_dir));
     a.launcher.Set("ui_language", g_language);
+    a.launcher.Set("ui_theme", std::to_string(g_ui_theme));
     if (!a.launcher.Save(LauncherIni(), "# CTR-NitroFueled-PC launcher")) {
         a.notice = T("No se pudo guardar launcher.ini.", "Could not save launcher.ini.");
     }
@@ -1230,15 +1352,6 @@ NickCheck::Result NickInfo() {
     return it == g_nick_check.results.end() ? NickCheck::Result{} : it->second;
 }
 
-constexpr const wchar_t* kCommunityDiscord = L"https://discord.gg/PAT5SJzdXw";
-
-/// The community's Discord (bugs, questions, ban appeals): a line and a button.
-void CommunityDiscordLine(const char* why) {
-    ImGui::TextColored(kGrey, "%s", why);
-    ImGui::SameLine();
-    if (ImGui::SmallButton(T("Abrir Discord", "Open Discord"))) OpenInShell(kCommunityDiscord);
-}
-
 /// This player's ban, as the server's nickname check tells it (nothing when not banned).
 bool BanNotice() {
     const NickCheck::Result info = NickInfo();
@@ -1257,7 +1370,6 @@ bool BanNotice() {
         ImGui::TextWrapped("%s", T("Duración: permanente", "Duration: permanent"));
     }
     ImGui::PopStyleColor();
-    CommunityDiscordLine(T("Si crees que es un error, apela en nuestro Discord.", "If you think it is a mistake, appeal on our Discord."));
     return true;
 }
 
@@ -2490,8 +2602,6 @@ void HelpMarker(const char* text) {
     }
 }
 
-const char* PerfReportsText();  // the performance diagnostic's explanation (PerfReportsPopup)
-
 void GameFlag(const char* key, const char* label, bool fallback, const char* help = nullptr) {
     bool v = g_app.game.Flag(key, fallback);
     if (ImGui::Checkbox(label, &v)) {
@@ -2541,31 +2651,37 @@ bool PrimaryPlayButton(const char* label, ImVec2 size, bool disabled) {
     const float y0 = a.y + 2.0f + press_offset;
     const float y1 = a.y + actual_size.y - 2.0f + press_offset;
     const float cy = (y0 + y1) * 0.5f;
-    const float inset = 11.0f;
-    ImVec2 shape[] = {
-        {a.x + inset, y0}, {a.x + actual_size.x - 22.0f, y0}, {a.x + actual_size.x - 5.0f, cy},
-        {a.x + actual_size.x - 22.0f, y1}, {a.x + inset, y1}, {a.x + inset + 13.0f, cy},
-    };
+    const UiTheme& th = CurrentTheme();
     ImDrawList* d = ImGui::GetWindowDrawList();
+
+    const ImVec2 r0{a.x + 4.0f, y0};
+    const ImVec2 r1{a.x + actual_size.x - 4.0f, y1};
+    const float rounding = 8.0f * g_ui_scale;
     if (!active) {
-        ImVec2 shadow[6];
-        for (int i = 0; i < 6; ++i) shadow[i] = ImVec2(shape[i].x, shape[i].y + 4.0f);
-        d->AddConvexPolyFilled(shadow, 6, IM_COL32(0, 29, 76, disabled ? 90 : 185));
+        d->AddRectFilled({r0.x, r0.y + 4.0f}, {r1.x, r1.y + 4.0f},
+                         IM_COL32(0, 0, 0, disabled ? 80 : 180), rounding);
     }
-    const ImU32 fill = disabled ? IM_COL32(140, 190, 210, 190)
-                                : hovered ? IM_COL32(250, 255, 255, 255) : IM_COL32(224, 247, 255, 255);
-    d->AddConvexPolyFilled(shape, 6, fill);
-    d->AddPolyline(shape, 6, disabled ? IM_COL32(177, 215, 230, 170) : IM_COL32(255, 255, 255, 255),
-                   ImDrawFlags_Closed, hovered ? 2.4f : 1.8f);
-    d->AddLine({a.x + 24.0f, y0 + 5.0f}, {a.x + actual_size.x - 28.0f, y0 + 5.0f},
-               disabled ? IM_COL32(255, 255, 255, 70) : IM_COL32(255, 255, 255, 170), 1.0f);
-    DrawMenuIcon(d, 0, {a.x + 39.0f, cy}, disabled ? IM_COL32(81, 119, 138, 255) : IM_COL32(5, 63, 109, 255), 1.0f);
-    ImFont* font = ImGui::GetFont();
-    const float font_size = ImGui::GetFontSize();
+    const ImU32 col_left = disabled ? IM_COL32(55, 60, 72, 200)
+                                    : Col(hovered ? th.button_active : th.accent, 1.0f);
+    const ImU32 col_right = disabled ? IM_COL32(45, 50, 62, 200)
+                                     : Col(hovered ? th.accent_alt : th.button_hover, 1.0f);
+    d->AddRectFilledMultiColor(r0, r1, col_left, col_right, col_right, col_left);
+    d->AddRect(r0, r1, disabled ? IM_COL32(110, 118, 135, 120) : Col(th.accent_alt, hovered ? 0.95f : 0.72f),
+               rounding, 0, hovered ? 2.2f : 1.5f);
+    d->AddLine({r0.x + 14.0f, y0 + 3.0f}, {r1.x - 14.0f, y0 + 3.0f},
+               disabled ? IM_COL32(255, 255, 255, 35) : IM_COL32(255, 255, 255, 130), 1.0f);
+
+    const ImU32 icon_col = disabled ? IM_COL32(140, 148, 165, 200) : IM_COL32(18, 18, 24, 255);
+    DrawMenuIcon(d, 0, {a.x + 36.0f, cy}, icon_col, 1.0f);
+    ImFont* font = g_ctr_font ? g_ctr_font : ImGui::GetFont();
+    const float font_size = ImGui::GetFontSize() * 1.08f;
     const ImVec2 text_size = font->CalcTextSizeA(font_size, FLT_MAX, 0.0f, label);
     const ImVec2 text_pos{a.x + (actual_size.x - text_size.x) * 0.5f, cy - text_size.y * 0.5f};
+    if (!disabled) {
+        d->AddText(font, font_size, {text_pos.x + 1.0f, text_pos.y + 1.0f}, IM_COL32(255, 255, 255, 90), label);
+    }
     d->AddText(font, font_size, text_pos,
-               disabled ? IM_COL32(81, 119, 138, 255) : IM_COL32(4, 49, 86, 255), label);
+               disabled ? IM_COL32(145, 152, 168, 210) : IM_COL32(14, 14, 20, 255), label);
     return pressed;
 }
 
@@ -2607,13 +2723,13 @@ void PlayTab() {
                 std::string srv = a.game.Get("online_server", "octr.ryu7w7.xyz");
                 if (srv.empty()) srv = "octr.ryu7w7.xyz";
                 const std::string nick = CurrentNick().empty() ? std::string("-") : CurrentNick();
-                ImGui::TextColored(ImVec4(0.35f, 0.75f, 1.0f, 1.0f), "[Online RyuNET] %s: %s  |  %s: %s",
+                ImGui::TextColored(ImVec4(1.0f, 0.72f, 0.22f, 1.0f), "[Online] %s: %s  |  %s: %s",
                                    T("Servidor", "Server"), srv.c_str(), T("Apodo", "Nick"), nick.c_str());
                 {
                     ImVec4 nat_color;
                     const std::string nat = NatLabel(Trim(srv), nat_color);
                     ImGui::SameLine(0.0f, 0.0f);
-                    ImGui::TextColored(ImVec4(0.35f, 0.75f, 1.0f, 1.0f), "  |  ");
+                    ImGui::TextColored(ImVec4(1.0f, 0.72f, 0.22f, 1.0f), "  |  ");
                     ImGui::SameLine(0.0f, 0.0f);
                     ImGui::TextColored(nat_color, "%s", nat.c_str());
                     if (ImGui::IsItemHovered())
@@ -3089,6 +3205,18 @@ void SettingsTab() {
         }
         if (ImGui::IsItemDeactivatedAfterEdit()) SaveGameIni();
     }
+    {
+        static constexpr Choice kFrameGen[] = {
+            {"Desactivado", "Off", "off"},
+            {"AMD FSR 3 (2x, experimental)", "AMD FSR 3 (2x, experimental)", "fsr3"},
+        };
+        if (GameChoiceCombo(T("Generación de fotogramas", "Frame generation"), "framegen", kFrameGen, "off", 16.0f))
+            SaveGameIni();
+        HelpMarker(T("Inserta un fotograma interpolado entre cada dos fotogramas del juego (FidelityFX FSR 3.1), duplicando "
+                     "los FPS mostrados en pantalla. Añade un fotograma de latencia; funciona mejor a 60 FPS o más.",
+                     "Inserts an interpolated frame between each two game frames (FidelityFX FSR 3.1), doubling the "
+                     "displayed FPS. Adds one frame of latency; works best at 60 FPS or above."));
+    }
     GameFlag("fullscreen", T("Pantalla completa", "Fullscreen"), false);
     GameFlag("borderless", T("Ventana sin bordes", "Borderless window"), false,
              T("Quita los bordes de la ventana en modo ventana.", "Removes window borders in windowed mode."));
@@ -3098,8 +3226,6 @@ void SettingsTab() {
                "del juego (Insert o L3+R3), pestaña Sala.",
                "In an online room, each player's ping in ms, under the FPS counter. Also in the in-game menu "
                "(Insert or L3+R3), Room tab."));
-    GameFlag("perf_reports", T("Enviar datos anónimos de rendimiento", "Send anonymous performance data"), false,
-             PerfReportsText());
     {
         std::scoped_lock lock{a.mutex};
         const std::string current = a.launcher.Get("display");
@@ -3580,20 +3706,20 @@ void NatTypeSection(const std::string& server) {
 
 void OnlineTab() {
     App& a = g_app;
-    ImGui::TextColored(kGrey, "%s", T("Juego online con un servidor RyuNET. Se aplica al pulsar Jugar.",
-                                      "Online play through a RyuNET server. Applied when you press Play."));
+    ImGui::TextColored(kGrey, "%s", T("Juego online multijugador. Se aplica al pulsar Jugar.",
+                                      "Online multiplayer. Applied when you press Play."));
 
     ImGui::SeparatorText(T("Servidor", "Server"));
     {
         GameFlag("online", T("Habilitar modo online", "Enable online mode"), true,
-                 T("Conecta a un servidor Demonware RyuNET para jugar online, emparejamiento, pit stop y marcadores.",
-                   "Connects to a RyuNET Demonware server for online play, matchmaking, pit stop, and leaderboards."));
+                 T("Conecta al servidor online para jugar partidas públicas, salas privadas, Pit Stop y marcadores.",
+                   "Connects to the online server for public matchmaking, private rooms, Pit Stop, and leaderboards."));
 
         const bool online_on = a.game.Flag("online", true);
         ImGui::BeginDisabled(!online_on);
 
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 20.0f);
-        if (ImGui::InputText(T("Servidor RyuNET (Server)", "RyuNET Server"), a.online_server_buf, sizeof(a.online_server_buf))) {
+        if (ImGui::InputText(T("Servidor Online (Server)", "Online Server"), a.online_server_buf, sizeof(a.online_server_buf))) {
             a.game.Set("online_server", a.online_server_buf);
         }
         if (ImGui::IsItemDeactivatedAfterEdit()) {
@@ -3618,8 +3744,8 @@ void OnlineTab() {
             a.game.Set("online_server", a.online_server_buf);
             SaveGameIni();
         }
-        HelpMarker(T("IP o dominio del servidor RyuNET (predeterminado: octr.ryu7w7.xyz, o 127.0.0.1 para servidor local). Puerto HTTP opcional :8080.",
-                     "IP or domain of the RyuNET server (default: octr.ryu7w7.xyz, or 127.0.0.1 for local server). Optional HTTP port :8080."));
+        HelpMarker(T("IP o dominio del servidor online (predeterminado: octr.ryu7w7.xyz, o 127.0.0.1 para servidor local). Puerto HTTP opcional :8080.",
+                     "IP or domain of the online server (default: octr.ryu7w7.xyz, or 127.0.0.1 for local server). Optional HTTP port :8080."));
         NatTypeSection(Trim(a.game.Get("online_server", "octr.ryu7w7.xyz")));
         ImGui::EndDisabled();
     }
@@ -3692,11 +3818,6 @@ void OnlineTab() {
         ImGui::TextWrapped("%s", rule);
     }
     ImGui::TextColored(kYellow, "%s", T("Romper las reglas puede costarte tus récords y un ban del online, temporal o permanente, también por IP.", "Breaking the rules can cost you your records and a ban from online play, temporary or permanent, also by IP."));
-    CommunityDiscordLine(T("Errores, dudas o apelar un baneo: nuestro Discord", "Bugs, questions or a ban appeal: our Discord"));
-    // Record validation now; ranked play with ranks and MMR, tied to the server, later.
-    ImGui::TextColored(kGrey, "%s", T("Crash Team Rank: valida tus récords (próximamente, competitivo con rangos y MMR)", "Crash Team Rank: validate your records (ranked play with MMR coming)"));
-    ImGui::SameLine();
-    if (ImGui::SmallButton(T("Abrir página", "Open page"))) OpenInShell(L"https://crashteamrank.vercel.app");
 
     ImGui::SeparatorText("Discord");
     LauncherFlag("discord_rpc", T("Mostrar actividad en Discord", "Show activity on Discord"), true,
@@ -4463,49 +4584,6 @@ void NickPopup() {
     if (ImGui::Button(T("Cancelar", "Cancel"))) {
         a.game.Load(GameIni());  // drop what was typed: every other setting is already saved
         SyncOnlineBuffers();
-        ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-}
-
-/// The anonymous performance diagnostic (bbport.ini perf_reports, scripts/perf_report.py): asked
-/// once, while it is neither 1 nor 0. A plain question, no alarm: what is sent and what is not.
-const char* PerfReportsText() {
-    return T("Al cerrar el juego, OCTR puede enviar un resumen anónimo de cómo le fue a tu PC: tarjeta "
-             "gráfica, procesador y memoria, los ajustes gráficos y los FPS de cada pista. Nada personal: ni "
-             "tu apodo, ni tus partidas, ni tus amigos, y tu IP no se guarda. Sirve para saber en qué PCs "
-             "hay que mejorar el juego. Siempre queda una copia en la carpeta perf.",
-             "When the game closes, OCTR can send an anonymous summary of how your PC did: graphics card, "
-             "processor and memory, the graphics settings and the FPS of each track. Nothing personal: not "
-             "your nickname, your races or your friends, and your IP is not stored. It shows which PCs the "
-             "game needs to improve on. A copy always stays in the perf folder.");
-}
-
-void PerfReportsPopup() {
-    App& a = g_app;
-    // Shown once per launcher start, after any other question: on the first start of a new folder
-    // the settings import opened in the same frame and replaced it, so it never came back.
-    static bool shown = false;
-    const std::string v = a.game.Get("perf_reports");
-    if (!shown && v != "1" && v != "0" && !a.game_running && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId))
-        ImGui::OpenPopup("perf_reports");
-    if (!ImGui::BeginPopupModal("perf_reports", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
-        return;
-    shown = true;
-    ImGui::TextUnformatted(T("¿Nos ayudas a mejorar OCTR?", "Help us improve OCTR?"));
-    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 28.0f);
-    ImGui::TextColored(kGrey, "%s", PerfReportsText());
-    ImGui::TextColored(kGrey, "%s", T("Puedes cambiarlo cuando quieras en Ajustes.", "You can change it any time in Settings."));
-    ImGui::PopTextWrapPos();
-    if (ImGui::Button(T("Sí, enviar datos anónimos", "Yes, send anonymous data"))) {
-        a.game.Set("perf_reports", "1");
-        SaveGameIni();
-        ImGui::CloseCurrentPopup();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(T("No, gracias", "No, thanks"))) {
-        a.game.Set("perf_reports", "0");
-        SaveGameIni();
         ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
@@ -5823,7 +5901,7 @@ void UpdateSection() {
     } else if (stage != UpdateState::Idle) {
         ImGui::TextColored(kGrey, "%s", T("Mira el aviso de arriba.", "See the notice at the top."));
     }
-    LauncherFlag("update_check", T("Buscar actualizaciones al abrir el launcher", "Check for updates when the launcher opens"), true,
+    LauncherFlag("update_check", T("Buscar actualizaciones al abrir el launcher", "Check for updates when the launcher opens"), false,
                  T("Una consulta pequeña a GitHub al abrir. No descarga nada sin tu permiso, salvo que actives la opción de abajo.",
                    "A small request to GitHub at start. Nothing is downloaded without your say, unless the option below is on."));
     LauncherFlag("update_auto", T("Instalar las actualizaciones automáticamente", "Install updates automatically"), false,
@@ -6523,7 +6601,7 @@ void ToolsTab() {
     if (ImGui::Button(T("Borrar la caché de shaders", "Clear the shader cache"))) a.confirm_clear_cache = true;
     ImGui::EndDisabled();
 
-    ImGui::SeparatorText(T("Idioma del launcher", "Launcher language"));
+    ImGui::SeparatorText(T("Idioma y apariencia", "Language & appearance"));
     const char* language_names[] = {"Auto (Windows)", "English", "Español", "Português (Brasil)", "Français",
                                     "Deutsch", "Italiano", "日本語", "简体中文", "Русский"};
     const char* language_codes[] = {"auto", "en", "es", "pt_BR", "fr", "de", "it", "ja", "zh_CN", "ru"};
@@ -6532,6 +6610,16 @@ void ToolsTab() {
     if (ImGui::Combo(T("Idioma", "Language"), &selected_language, language_names, 10)) {
         g_language = language_codes[selected_language];
         ApplyLauncherLanguage();
+        SaveLauncher();
+    }
+    const char* theme_names[] = {
+        T(kThemes[0].name_es, kThemes[0].name_en),
+        T(kThemes[1].name_es, kThemes[1].name_en),
+        T(kThemes[2].name_es, kThemes[2].name_en),
+        T(kThemes[3].name_es, kThemes[3].name_en),
+    };
+    if (ImGui::Combo(T("Tema visual", "Visual theme"), &g_ui_theme, theme_names, 4)) {
+        ApplyUiTheme();
         SaveLauncher();
     }
 
@@ -6582,8 +6670,9 @@ void ClearShaderCache() {
 void HeroHeader() {
     const ImVec2 origin = ImGui::GetCursorScreenPos();
     const float width = ImGui::GetContentRegionAvail().x;
-    const float height = 270.0f;
+    const float height = 178.0f * g_ui_scale;
     const ImVec2 end{origin.x + width, origin.y + height};
+    const UiTheme& th = CurrentTheme();
     ImDrawList* draw = ImGui::GetWindowDrawList();
     if (g_hero_art.texture) {
         const float image_aspect = float(g_hero_art.width) / float(g_hero_art.height);
@@ -6600,42 +6689,115 @@ void HeroHeader() {
         }
         draw->AddImage((ImTextureID)(intptr_t)g_hero_art.texture, origin, end, uv0, uv1);
     } else {
-        draw->AddRectFilled(origin, end, IM_COL32(48, 32, 20, 255));
+        draw->AddRectFilled(origin, end, Col(th.nav_bg, 1.0f));
     }
+    // Smooth dark vignette fade on left and bottom so the logo and tabs blend into obsidian carbon
+    draw->AddRectFilledMultiColor(origin, ImVec2(origin.x + width * 0.52f, end.y),
+                                  IM_COL32(8, 10, 14, 195), IM_COL32(8, 10, 14, 0),
+                                  IM_COL32(8, 10, 14, 0), IM_COL32(8, 10, 14, 215));
+    draw->AddRectFilledMultiColor(ImVec2(origin.x, end.y - 54.0f * g_ui_scale), end,
+                                  IM_COL32(10, 12, 18, 0), IM_COL32(10, 12, 18, 0),
+                                  Col(th.win_bg, 0.96f), Col(th.win_bg, 0.96f));
     if (g_logo_art.texture) {
-        const float max_w = std::min(width * 0.34f, 390.0f);
-        const float max_h = height * 0.78f;
+        const float max_w = std::min(width * 0.30f, 320.0f * g_ui_scale);
+        const float max_h = height * 0.80f;
         const float aspect = float(g_logo_art.width) / float(g_logo_art.height);
         float logo_w = max_w, logo_h = logo_w / aspect;
         if (logo_h > max_h) { logo_h = max_h; logo_w = logo_h * aspect; }
-        const ImVec2 lo{origin.x + 28.0f, origin.y + (height - logo_h) * 0.5f};
+        const ImVec2 lo{origin.x + 24.0f * g_ui_scale, origin.y + (height - logo_h) * 0.5f};
         const ImVec2 hi{lo.x + logo_w, lo.y + logo_h};
         draw->AddImage((ImTextureID)(intptr_t)g_logo_art.texture, lo, hi);
     }
-    draw->AddRectFilled(ImVec2(origin.x, end.y - 4.0f), end, IM_COL32(238, 169, 48, 255));
+    // Glowing dual-tone racing accent bar along bottom of hero banner
+    draw->AddRectFilledMultiColor(ImVec2(origin.x, end.y - 3.0f * g_ui_scale), end,
+                                  Col(th.accent, 1.0f), Col(th.accent_alt, 1.0f),
+                                  Col(th.accent_alt, 1.0f), Col(th.accent, 1.0f));
     ImGui::Dummy(ImVec2(width, height));
 }
 
 void WindowBar(float width) {
-    const float height = 40.0f;
+    const float height = 42.0f * g_ui_scale;
     ImGui::SetCursorPos(ImVec2(0, 0));
     const ImVec2 p = ImGui::GetWindowPos();
+    const UiTheme& th = CurrentTheme();
     ImDrawList* draw = ImGui::GetWindowDrawList();
-    draw->AddRectFilled(p, ImVec2(p.x + width, p.y + height), IM_COL32(7, 72, 145, 255));
-    draw->AddRectFilled(ImVec2(p.x, p.y + height - 1), ImVec2(p.x + width, p.y + height),
-                        IM_COL32(44, 166, 228, 255));
-    const float bw = 42.0f, bh = 30.0f, gap = 3.0f;
-    const float left = width - 3.0f * bw - 2.0f * gap - 8.0f;
+    draw->AddRectFilled(p, ImVec2(p.x + width, p.y + height), Col(th.titlebar_bg, 1.0f));
+    draw->AddRectFilledMultiColor(ImVec2(p.x, p.y + height - 2.0f), ImVec2(p.x + width, p.y + height),
+                                  Col(th.accent, 0.95f), Col(th.accent_alt, 0.95f),
+                                  Col(th.accent_alt, 0.95f), Col(th.accent, 0.95f));
+
+    // Left: Launcher Title + PC Edition Badge
+    ImFont* title_font = g_ctr_font ? g_ctr_font : ImGui::GetFont();
+    const float fsize = ImGui::GetFontSize();
+    const char* title_txt = "CTR: NITRO-FUELED";
+    const ImVec2 tsize = title_font->CalcTextSizeA(fsize, FLT_MAX, 0.0f, title_txt);
+    const float ty = p.y + (height - tsize.y) * 0.5f;
+    draw->AddRectFilled(ImVec2(p.x + 12.0f * g_ui_scale, p.y + 10.0f * g_ui_scale),
+                        ImVec2(p.x + 16.0f * g_ui_scale, p.y + height - 10.0f * g_ui_scale),
+                        Col(th.accent, 1.0f), 2.0f);
+    draw->AddText(title_font, fsize, ImVec2(p.x + 24.0f * g_ui_scale, ty), IM_COL32(248, 250, 255, 255), title_txt);
+
+    // Region & Status pills on the titlebar
+    float pill_x = p.x + 24.0f * g_ui_scale + tsize.x + 14.0f * g_ui_scale;
+    auto draw_pill = [&](const std::string& text, ImVec4 border_col, ImVec4 text_col) {
+        ImFont* f = ImGui::GetFont();
+        const float pfs = fsize * 0.84f;
+        const ImVec2 sz = f->CalcTextSizeA(pfs, FLT_MAX, 0.0f, text.c_str());
+        const float pw = sz.x + 18.0f * g_ui_scale;
+        const float ph = 24.0f * g_ui_scale;
+        const float py = p.y + (height - ph) * 0.5f;
+        draw->AddRectFilled(ImVec2(pill_x, py), ImVec2(pill_x + pw, py + ph),
+                            IM_COL32(18, 22, 32, 220), ph * 0.5f);
+        draw->AddRect(ImVec2(pill_x, py), ImVec2(pill_x + pw, py + ph),
+                      Col(border_col, 0.70f), ph * 0.5f, 0, 1.2f);
+        draw->AddText(f, pfs, ImVec2(pill_x + 9.0f * g_ui_scale, py + (ph - sz.y) * 0.5f),
+                      Col(text_col, 1.0f), text.c_str());
+        pill_x += pw + 8.0f * g_ui_scale;
+    };
+    if (IsCtrTitle(g_app.game_info.title)) {
+        const std::string region = (g_app.game_info.title == "CUSA14876" ? "Europe (PAL) · " : "Americas (NTSC) · ") +
+                                   g_app.game_info.title;
+        draw_pill(region, th.accent_alt, th.accent_alt);
+    }
+    if (g_app.game_info.kind == Kind::Complete && g_app.game_checked && g_app.game_ok) {
+        const bool onl = g_app.game.Flag("online", true);
+        const std::string status = onl ? std::string(T("● ONLINE ACTIVO", "● ONLINE READY"))
+                                       : std::string(T("● LISTO (OFFLINE)", "● READY TO PLAY"));
+        draw_pill(status, kGreen, kGreen);
+    }
+
+    const float bw = 42.0f * g_ui_scale, bh = 30.0f * g_ui_scale, gap = 3.0f * g_ui_scale;
+    const float left = width - 3.0f * bw - 2.0f * gap - 8.0f * g_ui_scale;
+
+    // Theme quick-switch button right next to window controls
+    const std::string theme_btn_label = std::string(T("Tema: ", "Theme: ")) + T(th.name_es, th.name_en) + "##theme_cycle";
+    const float theme_bw = 165.0f * g_ui_scale;
+    const float theme_bx = left - theme_bw - 10.0f * g_ui_scale;
+    if (theme_bx > pill_x - p.x + 8.0f) {
+        ImGui::SetCursorPos(ImVec2(theme_bx, (height - bh) * 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_Button, th.frame_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, th.button_hover);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, th.button_active);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 14.0f * g_ui_scale);
+        if (ImGui::Button(theme_btn_label.c_str(), ImVec2(theme_bw, bh))) {
+            g_ui_theme = (g_ui_theme + 1) % 4;
+            ApplyUiTheme();
+            SaveLauncher();
+        }
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(3);
+    }
+
     auto button = [&](const char* id, int kind) {
-        ImGui::SetCursorPos(ImVec2(left + kind * (bw + gap), 5.0f));
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.04f, 0.25f, 0.47f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.08f, 0.40f, 0.66f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.55f, 0.78f, 1));
+        ImGui::SetCursorPos(ImVec2(left + kind * (bw + gap), (height - bh) * 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_Button, th.frame_bg);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, kind == 2 ? ImVec4(0.85f, 0.20f, 0.24f, 1.0f) : th.button_hover);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, kind == 2 ? ImVec4(0.95f, 0.28f, 0.32f, 1.0f) : th.button_active);
         const bool clicked = ImGui::Button(id, ImVec2(bw, bh));
         ImGui::PopStyleColor(3);
         const ImVec2 a = ImGui::GetItemRectMin(), b = ImGui::GetItemRectMax();
         const ImVec2 c{(a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f};
-        const ImU32 ink = IM_COL32(255, 234, 198, 255);
+        const ImU32 ink = IM_COL32(245, 245, 250, 255);
         if (kind == 0) draw->AddLine(ImVec2(c.x - 5, c.y), ImVec2(c.x + 5, c.y), ink, 1.6f);
         else if (kind == 1) draw->AddRect(ImVec2(c.x - 5, c.y - 5), ImVec2(c.x + 5, c.y + 5), ink, 0, 0, 1.4f);
         else {
@@ -6649,8 +6811,9 @@ void WindowBar(float width) {
     if (button("##close", 2)) SendMessageW(g_app.hwnd, WM_CLOSE, 0, 0);
     RECT client{};
     GetClientRect(g_app.hwnd, &client);
-    g_titlebar_drag = RECT{0, 0, std::max<LONG>(0, client.right - LONG(3 * bw + 2 * gap + 8)), LONG(height)};
-    ImGui::SetCursorPos(ImVec2(14, height + 10));
+    const LONG drag_right = std::max<LONG>(0, LONG(theme_bx > 0 ? theme_bx : left));
+    g_titlebar_drag = RECT{0, 0, drag_right, LONG(height)};
+    ImGui::SetCursorPos(ImVec2(14, height + 6));
 }
 
 bool LoadArtworkFile(const fs::path& path, LauncherArtwork& artwork) {
@@ -6700,7 +6863,7 @@ void ReleaseArtwork() {
 }
 
 void DrawMenuIcon(ImDrawList* d, int id, ImVec2 c, ImU32 ink, float s) {
-    const ImU32 navy = IM_COL32(6, 39, 89, 255);
+    const ImU32 navy = IM_COL32(12, 14, 22, 240);
     auto line = [&](ImVec2 a, ImVec2 b, float t = 2.2f) { d->AddLine(a, b, navy, t * s); d->AddLine(a, b, ink, t * s * 0.58f); };
     if (id == 0) { // checkered flag / race
         line({c.x-7*s,c.y+8*s},{c.x-7*s,c.y-8*s},2.5f); d->AddRectFilled({c.x-5*s,c.y-8*s},{c.x+8*s,c.y+1*s},ink,1.5f*s);
@@ -6727,6 +6890,10 @@ void DrawMenuIcon(ImDrawList* d, int id, ImVec2 c, ImU32 ink, float s) {
     } else if (id == 7) { // crate
         d->AddRectFilled({c.x-8*s,c.y-7*s},{c.x+8*s,c.y+7*s},navy,1*s); d->AddRectFilled({c.x-6*s,c.y-5*s},{c.x+6*s,c.y+5*s},ink,1*s);
         d->AddRect({c.x-4*s,c.y-3*s},{c.x+4*s,c.y+3*s},navy,0,0,1.6f*s); d->AddLine({c.x-2*s,c.y+1*s},{c.x,c.y-2*s},navy,1.8f*s); d->AddLine({c.x,c.y-2*s},{c.x+2*s,c.y+1*s},navy,1.8f*s);
+    } else if (id == 8) { // trophy star
+        d->AddCircleFilled(c, 7.2f * s, navy, 16);
+        d->AddCircleFilled(c, 5.6f * s, ink, 16);
+        d->AddCircleFilled(c, 2.4f * s, navy, 12);
     } else { // crossed tools
         line({c.x-7*s,c.y-7*s},{c.x+7*s,c.y+7*s},3); line({c.x+7*s,c.y-7*s},{c.x-7*s,c.y+7*s},3); d->AddCircleFilled(c,2.5f*s,ink,12);
     }
@@ -6734,43 +6901,45 @@ void DrawMenuIcon(ImDrawList* d, int id, ImVec2 c, ImU32 ink, float s) {
 
 bool MenuEntry(int id, const char* label, bool selected, float width) {
     const ImVec2 start = ImGui::GetCursorScreenPos();
-    const ImVec2 size{width, 44.0f};
+    const ImVec2 size{width, 42.0f * g_ui_scale};
     const bool clicked = ImGui::InvisibleButton(label, size);
     const bool hovered = ImGui::IsItemHovered();
     const ImVec2 a{start.x, start.y}, b{start.x + size.x, start.y + size.y};
+    const UiTheme& th = CurrentTheme();
     ImDrawList* d = ImGui::GetWindowDrawList();
-    const double now = ImGui::GetTime();
-    static double selected_since = 0.0;
-    static int last_selected = -1;
-    if (selected && last_selected != id) { last_selected = id; selected_since = now; }
-    const float t = selected ? std::clamp(float((now - selected_since) / 0.26), 0.0f, 1.0f) : 1.0f;
-    const float ease = 1.0f - (1.0f-t)*(1.0f-t);
-    const float slide = selected ? (1.0f-ease) * -13.0f : 0.0f;
-    ImVec2 p0{a.x+slide,a.y+4}, p1{b.x+slide-10,a.y+4}, p2{b.x+slide,a.y+size.y-4}, p3{a.x+slide+10,a.y+size.y-4};
-    const ImU32 shadow=IM_COL32(0,31,79,95), dark=hovered?IM_COL32(7,65,130,218):IM_COL32(6,55,113,178);
-    const ImVec2 sh[]={ImVec2(p0.x,p0.y+3),ImVec2(p1.x,p1.y+3),ImVec2(p2.x,p2.y+3),ImVec2(p3.x,p3.y+3)};
-    d->AddConvexPolyFilled(sh,4,shadow);
-    const ImVec2 poly[]={p0,p1,p2,p3};
-    d->AddConvexPolyFilled(poly,4,selected?IM_COL32(234,250,255,248):dark);
+    const float rounding = 7.0f * g_ui_scale;
+    const ImVec2 r0{a.x + 2.0f, a.y + 2.0f};
+    const ImVec2 r1{b.x - 2.0f, b.y - 2.0f};
+
     if (selected) {
-        d->AddPolyline(poly,4,IM_COL32(255,255,255,215),ImDrawFlags_Closed,1.6f);
-        d->AddRectFilled({p3.x+3,p3.y-1},{p3.x+8,p3.y+1},IM_COL32(29,211,255,255));
-        const float elapsed = float(now-selected_since);
-        if (elapsed < 0.42f) {
-            const float shine = std::clamp(elapsed / 0.42f, 0.0f, 1.0f);
-            const float sx = a.x+slide+12.0f+shine*(size.x-54.0f);
-            d->PushClipRect({p0.x,p0.y},{p2.x,p2.y},true);
-            d->AddLine({sx,p0.y+5},{sx+13,p2.y-5},IM_COL32(255,255,255,110),2.0f);
-            d->PopClipRect();
-        }
+        d->AddRectFilledMultiColor(r0, r1,
+                                   Col(th.accent, 0.34f), Col(th.accent_alt, 0.14f),
+                                   Col(th.accent_alt, 0.14f), Col(th.accent, 0.34f));
+        d->AddRect(r0, r1, Col(th.accent, 0.85f), rounding, 0, 1.5f);
+        d->AddRectFilled({r0.x, r0.y + 4.0f * g_ui_scale},
+                         {r0.x + 4.5f * g_ui_scale, r1.y - 4.0f * g_ui_scale},
+                         Col(th.accent_alt, 1.0f), 2.0f);
+    } else if (hovered) {
+        d->AddRectFilled(r0, r1, Col(th.frame_hover, 0.88f), rounding);
+        d->AddRect(r0, r1, Col(th.border, 0.70f), rounding, 0, 1.0f);
+        d->AddRectFilled({r0.x, r0.y + 8.0f * g_ui_scale},
+                         {r0.x + 3.0f * g_ui_scale, r1.y - 8.0f * g_ui_scale},
+                         Col(th.accent, 0.80f), 1.5f);
+    } else {
+        d->AddRectFilled(r0, r1, Col(th.frame_bg, 0.55f), rounding);
     }
-    const ImVec2 icon{a.x+31.0f+slide,a.y+size.y*0.5f};
-    DrawMenuIcon(d,id,icon,selected?IM_COL32(9,64,112,255):IM_COL32(234,249,255,235),0.75f);
+
+    const ImVec2 icon{a.x + 26.0f * g_ui_scale, a.y + size.y * 0.5f};
+    const ImU32 icon_col = selected ? Col(th.accent_alt, 1.0f)
+                                    : hovered ? IM_COL32(255, 255, 255, 245) : IM_COL32(195, 204, 220, 220);
+    DrawMenuIcon(d, id, icon, icon_col, 0.78f * g_ui_scale);
     ImFont* label_font = g_ctr_font ? g_ctr_font : ImGui::GetFont();
     const float label_font_size = ImGui::GetFontSize();
-    const ImVec2 text_size=label_font->CalcTextSizeA(label_font_size, FLT_MAX, 0.0f, label);
-    const ImVec2 text{a.x+55.0f+slide,a.y+(size.y-text_size.y)*0.5f};
-    d->AddText(label_font,label_font_size,text,selected?IM_COL32(4,46,84,255):IM_COL32(237,249,255,245),label);
+    const ImVec2 text_size = label_font->CalcTextSizeA(label_font_size, FLT_MAX, 0.0f, label);
+    const ImVec2 text{a.x + 48.0f * g_ui_scale, a.y + (size.y - text_size.y) * 0.5f};
+    const ImU32 txt_col = selected ? Col(th.accent_alt, 1.0f)
+                                   : hovered ? IM_COL32(255, 255, 255, 255) : IM_COL32(224, 230, 242, 235);
+    d->AddText(label_font, label_font_size, text, txt_col, label);
     return clicked;
 }
 
@@ -6778,6 +6947,7 @@ void Frame() {
     App& a = g_app;
     PollJobs();
     PollUpdate();
+    const UiTheme& th = CurrentTheme();
     const ImGuiViewport* vp = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(vp->WorkPos);
     ImGui::SetNextWindowSize(vp->WorkSize);
@@ -6790,9 +6960,10 @@ void Frame() {
         ImVec2 uv0{0,0},uv1{1,1};
         if (ia>wa) { const float v=wa/ia; uv0.x=(1-v)*0.5f; uv1.x=1-uv0.x; }
         else { const float v=ia/wa; uv0.y=(1-v)*0.5f; uv1.y=1-uv0.y; }
-        ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)g_menu_background.texture,
-                                             vp->WorkPos, ImVec2(vp->WorkPos.x + vp->WorkSize.x,
-                                                                 vp->WorkPos.y + vp->WorkSize.y),uv0,uv1);
+        ImDrawList* bg = ImGui::GetWindowDrawList();
+        const ImVec2 p1{vp->WorkPos.x + vp->WorkSize.x, vp->WorkPos.y + vp->WorkSize.y};
+        bg->AddImage((ImTextureID)(intptr_t)g_menu_background.texture, vp->WorkPos, p1, uv0, uv1);
+        bg->AddRectFilled(vp->WorkPos, p1, Col(th.win_bg, 0.84f));
     }
     const float width = ImGui::GetWindowSize().x;
     WindowBar(width);
@@ -6805,35 +6976,35 @@ void Frame() {
     }
     UpdateBanner();
 
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.025f, 0.19f, 0.40f, 0.78f));
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, th.nav_bg);
     ImGui::BeginChild("menu_body", ImVec2(0, 0), ImGuiChildFlags_None);
-    const float menu_w = 238.0f;
+    const float menu_w = 236.0f * g_ui_scale;
     ImGui::BeginChild("menu_navigation", ImVec2(menu_w, 0), ImGuiChildFlags_None);
-    ImGui::SetCursorPos(ImVec2(18.0f, 14.0f));
-    ImGui::TextColored(ImVec4(0.76f, 0.92f, 1.0f, 0.9f), "%s", T("MENÚ PRINCIPAL", "MAIN MENU"));
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 8.0f);
+    ImGui::SetCursorPos(ImVec2(16.0f * g_ui_scale, 12.0f * g_ui_scale));
+    ImGui::TextColored(th.accent_alt, "%s", T("MENÚ DE CARRERA", "RACING MENU"));
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f * g_ui_scale);
     const char* pages[] = {T("Jugar", "Play"), T("Ajustes", "Settings"), "Online", T("Mando", "Gamepad"),
                            T("Teclado", "Keyboard"), "Mods", T("Guardados", "Saves"), "DLC",
                            T("Logros", "Achievements"), T("Herramientas", "Tools")};
     for (int i=0; i<10; ++i) {
-        ImGui::SetCursorPosX(8.0f);
-        if (MenuEntry(i, pages[i], a.active_page == i, menu_w - 16.0f)) {
+        ImGui::SetCursorPosX(8.0f * g_ui_scale);
+        if (MenuEntry(i, pages[i], a.active_page == i, menu_w - 16.0f * g_ui_scale)) {
             a.active_page = i;
             if (i != 3) g_pad_capture = -1;
             if (i != 4) g_key_capture = -1;
         }
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3.0f);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.0f * g_ui_scale);
     }
-    ImGui::SetCursorPosY(std::max(ImGui::GetCursorPosY(), ImGui::GetWindowHeight() - 38.0f));
-    ImGui::SetCursorPosX(18.0f);
-    ImGui::TextColored(ImVec4(0.77f, 0.91f, 1.0f, 0.84f), "CTR  •  %s", a.version.c_str());
+    ImGui::SetCursorPosY(std::max(ImGui::GetCursorPosY(), ImGui::GetWindowHeight() - 34.0f * g_ui_scale));
+    ImGui::SetCursorPosX(16.0f * g_ui_scale);
+    ImGui::TextColored(ImVec4(0.72f, 0.76f, 0.84f, 0.85f), "CTR-NF PC  •  %s", a.version.c_str());
     ImGui::EndChild();
     ImGui::SameLine(0.0f, 0.0f);
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.015f, 0.13f, 0.32f, 0.82f));
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, th.content_bg);
     // Real child padding applies to every row, table, wrap edge and tab.
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(22.0f, 17.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(22.0f * g_ui_scale, 16.0f * g_ui_scale));
     ImGui::BeginChild("menu_content", ImVec2(0, 0), ImGuiChildFlags_AlwaysUseWindowPadding);
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.91f, 0.97f, 1.0f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.96f, 0.98f, 1.0f));
     switch (a.active_page) {
     case 0: PlayTab(); break;
     case 1: SettingsTab(); break;
@@ -6856,8 +7027,7 @@ void Frame() {
     SaveConfirmations();
     NickPopup();
     JoinServerPopup();
-    ImportPopup();  // before the diagnostic's question, which waits for it
-    PerfReportsPopup();
+    ImportPopup();
     ShaderProgressPopup();
     if (a.confirm_clear_cache) {
         ImGui::OpenPopup("clear_cache");
@@ -6924,6 +7094,7 @@ void LoadState() {
     SyncOnlineBuffers();
     const std::string lang = a.launcher.Get("ui_language");
     g_language = lang.empty() ? "auto" : lang;
+    g_ui_theme = std::clamp(a.launcher.Int("ui_theme", 0), 0, 3);
     ApplyLauncherLanguage();
     a.game_dir = TextPath(a.launcher.Get("game_dir"));
     a.base_dir = TextPath(a.launcher.Get("base_dir"));
@@ -7182,6 +7353,20 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     if (cmd_argv) {
         for (int i = 1; i < cmd_argc; ++i) {
             if (_wcsicmp(cmd_argv[i], L"--updated") == 0) updated = true;  // started by an update (PollUpdate)
+            if (_wcsicmp(cmd_argv[i], L"--tab") == 0 && i + 1 < cmd_argc) {
+                const std::string tab = Lower(Narrow(cmd_argv[++i]));
+                if (tab == "play") g_app.active_page = 0;
+                else if (tab == "settings") g_app.active_page = 1;
+                else if (tab == "online") g_app.active_page = 2;
+                else if (tab == "gamepad" || tab == "controls") g_app.active_page = 3;
+                else if (tab == "keyboard") g_app.active_page = 4;
+                else if (tab == "mods" || tab == "patches") g_app.active_page = 5;
+                else if (tab == "saves") g_app.active_page = 6;
+                else if (tab == "dlc") g_app.active_page = 7;
+                else if (tab == "achievements" || tab == "trophies") g_app.active_page = 8;
+                else if (tab == "tools") g_app.active_page = 9;
+                continue;
+            }
             if (_wcsicmp(cmd_argv[i], L"--launch") == 0 || _wcsicmp(cmd_argv[i], L"--play") == 0 ||
                 _wcsicmp(cmd_argv[i], L"-launch") == 0 || _wcsicmp(cmd_argv[i], L"-play") == 0 ||
                 _wcsicmp(cmd_argv[i], L"--direct") == 0) {
@@ -7200,7 +7385,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
             g_app.notice = Format(T("Actualizado a %s. Tus ajustes, amigos, parches y partidas se mantienen.",
                                     "Updated to %s. Your settings, friends, patches and saves are kept."),
                                   g_app.version);
-        } else if (g_app.launcher.Flag("update_check", true)) {
+        } else if (g_app.launcher.Flag("update_check", false)) {
             StartUpdateCheck(g_app.launcher.Flag("update_auto", false));
         }
     }
@@ -7267,31 +7452,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     io.LogFilename = nullptr;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
     ImGui::StyleColorsDark();
+    ApplyUiTheme();
     ImGuiStyle& style = ImGui::GetStyle();
-    style.Colors[ImGuiCol_Text] = ImVec4(0.94f, 0.98f, 1.0f, 1.0f);
-    style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.65f, 0.83f, 0.94f, 1.0f);
-    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.02f, 0.10f, 0.24f, 1.0f);
-    style.Colors[ImGuiCol_ChildBg] = ImVec4(0.02f, 0.18f, 0.36f, 0.78f);
-    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.02f, 0.13f, 0.30f, 0.98f);
-    style.Colors[ImGuiCol_Border] = ImVec4(0.48f, 0.84f, 0.97f, 0.35f);
-    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.04f, 0.24f, 0.43f, 0.90f);
-    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.07f, 0.38f, 0.60f, 1.0f);
-    style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.10f, 0.48f, 0.68f, 1.0f);
-    style.Colors[ImGuiCol_Button] = ImVec4(0.04f, 0.27f, 0.49f, 0.95f);
-    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.10f, 0.50f, 0.70f, 1.0f);
-    style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.17f, 0.71f, 0.87f, 1.0f);
-    style.Colors[ImGuiCol_CheckMark] = ImVec4(0.38f, 0.91f, 1.0f, 1.0f);
-    style.Colors[ImGuiCol_Header] = ImVec4(0.05f, 0.35f, 0.60f, 0.9f);
-    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.11f, 0.55f, 0.76f, 1.0f);
-    style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.16f, 0.68f, 0.84f, 1.0f);
     style.FontSizeBase = 17.0f;
     style.ScaleAllSizes(scale);
     style.FontScaleDpi = scale;
     style.WindowPadding = ImVec2(16 * scale, 14 * scale);
     style.FramePadding = ImVec2(10 * scale, 6 * scale);
     style.ItemSpacing = ImVec2(10 * scale, 8 * scale);
-    style.FrameRounding = 4 * scale;
-    style.TabRounding = 4 * scale;
+    style.FrameRounding = 5 * scale;
+    style.TabRounding = 5 * scale;
     style.WindowRounding = 9 * scale;
     wchar_t fonts[MAX_PATH];
     const UINT n = GetWindowsDirectoryW(fonts, MAX_PATH);
@@ -7308,10 +7478,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
             if (!fs::is_regular_file(file, ec)) continue;
             ImFontConfig merge;
             merge.MergeMode = true;
-            io.Fonts->AddFontFromFileTTF(PathText(file).c_str(), 0.0f, &merge);
+            io.Fonts->AddFontFromFileTTF(PathText(file).c_str(), style.FontSizeBase, &merge);
         }
     };
-    if (fs::is_regular_file(segoe, ec)) io.Fonts->AddFontFromFileTTF(PathText(segoe).c_str());
+    if (fs::is_regular_file(segoe, ec)) io.Fonts->AddFontFromFileTTF(PathText(segoe).c_str(), style.FontSizeBase);
     else io.Fonts->AddFontDefault();
     merge_fallbacks(false);
     const fs::path ctr_font = g_app.root / L"art" / L"ctr-menu.ttf";

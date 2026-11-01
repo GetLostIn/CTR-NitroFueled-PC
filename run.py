@@ -41,13 +41,11 @@ import button_prompts  # noqa: E402
 import speed_mode  # noqa: E402
 import item_rules  # noqa: E402
 import online_mode  # noqa: E402
-import perf_report  # noqa: E402
 import native_shaders  # noqa: E402
 import aspect_ratio  # noqa: E402
 sys.path.pop(0)
 
 LOG = None  # last_run.log (or BB_SAVE_LOG's file): everything this launch prints
-PERF = None  # the performance diagnostic's collector (scripts/perf_report.py), fed the game's lines
 # Vulkan's start-up, from the game's lines: when its window opened, whether the GPU was opened
 # ("GPU: <name>, <n> MiB VRAM"), the layers installed. A player's game sat on a black window between
 # the two (an overlay's Vulkan layer or a driver hanging): see watch_vulkan_start.
@@ -114,11 +112,6 @@ def emit(text):
         try:
             LOG.write(text)
             LOG.flush()
-        except Exception:
-            pass
-    if PERF:
-        try:
-            PERF.feed(text)
         except Exception:
             pass
     for line in text.splitlines():
@@ -439,7 +432,7 @@ def server_settings(host, port):
     return settings if isinstance(settings, dict) else {}
 
 
-RELEASES_API = 'https://api.github.com/repos/Ryu7w7/OCTR-NitroFueled-PC/releases/latest'
+RELEASES_API = 'https://api.github.com/repos/GetLostIn/CTR-NitroFueled-PC/releases/latest'
 
 
 def parse_version(text):
@@ -585,7 +578,7 @@ def setup_online(env, config, data):
         "friends.dev.demonware.net": f"http://{host}:{auth_port}",
     }
     overrides_file.write_text(json.dumps(overrides, indent=2) + '\n', encoding='utf-8')
-    say(f'RyuNET Online active -> server {host}:{auth_port}, user {name}')
+    say(f'Online active -> server {host}:{auth_port}, user {name}')
     # Every player loads the theme the server announces (bbport.ini theme= only applies offline),
     # and the server's race-end countdown.
     theme = announced.get('theme')
@@ -606,39 +599,6 @@ def setup_online(env, config, data):
         rules_file.write_text(json.dumps(items, sort_keys=True), encoding='utf-8')
         env['BB_ITEM_RULES'] = str(rules_file)
         say(f'Item rules from the server: {items.get("name") or "custom"}')
-
-
-def finish_perf_report(env, config, data, version, title_id, code):
-    """The anonymous performance report of this launch: kept beside the logs (perf/), sent to the
-    RyuNET server only when the player said yes (bbport.ini perf_reports=1, asked once by the
-    launcher). Never stops anything: a failure is one line in the log."""
-    if not PERF:
-        return
-    try:
-        report = PERF.report({
-            'octr': version[:40],
-            'edition': title_id,
-            'renderer': 'native' if env.get('BB_VK_NATIVE_ONLY') == '1' else 'shadps4',
-            'online': env.get('BB_ONLINE') == '1',
-            'settings': perf_report.settings_of(config),
-            'exit': {'code': code, 'meaning': perf_report.exit_meaning(code)},
-            'mods': perf_report.mods_in_use(data),
-        })
-        if not report.get('overall') and not report.get('fault'):
-            return  # nothing drawn and no crash (a start stopped early): nothing to say
-        path = perf_report.keep(report, data / 'perf')
-        if perf_report.consent(config) != '1':
-            return
-        host = env.get('BB_ONLINE_SERVER') or perf_report.settings_value(config, 'online_server') or 'octr.ryu7w7.xyz'
-        port = env.get('BB_ONLINE_HTTP_PORT', '8080')
-        if ':' in host and not host.startswith('['):
-            host, _, p = host.partition(':')
-            port = p if p.isdigit() else port
-        ryunet_json(host, port, '/ryunet/perf', 4, method='POST',
-                    body=json.dumps(report, separators=(',', ':')).encode())
-        say(f'Performance report sent (anonymous; a copy: {path.name} in perf/)')
-    except Exception as error:  # no network, an old server: the report stays local
-        say(f'Performance report not sent ({type(error).__name__}); a copy stays in perf/')
 
 
 def watch_vulkan_start(process, env):
@@ -979,8 +939,6 @@ def main():
                    '--app0', str(game), '--user', str(user_dir),
                    '--timeout', env.get('BB_TIMEOUT', '0'), *isa_args, *args]
         first = True
-        global PERF
-        PERF = perf_report.Collector()
         while True:
             if not first:  # the in-game menu may have changed render_res
                 settings, layout_patches = apply_layout()
@@ -1038,7 +996,6 @@ def main():
                 continue
             if code != RESTART_CODE:
                 say(f'--- the game ended with code {code}')
-                finish_perf_report(env, config, data, version, title_id, code)
                 if code == UNSUPPORTED_GPU_CODE:
                     say('--- This GPU or its driver lacks what the game needs from Vulkan (version 1.3 and '
                         'sparse buffers; the STOP line above says which). Update the graphics driver; if it '

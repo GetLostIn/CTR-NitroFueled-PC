@@ -15,7 +15,7 @@ import re
 import urllib.request
 from pathlib import Path
 
-REPO = "Ryu7w7/OCTR-NitroFueled-PC"
+REPO = "GetLostIn/CTR-NitroFueled-PC"
 LATEST = f"https://api.github.com/repos/{REPO}/releases/latest"
 RELEASES_PAGE = f"https://github.com/{REPO}/releases/latest"
 ASSET = re.compile(r"^SacredFire-.+-x86_64\.AppImage$")

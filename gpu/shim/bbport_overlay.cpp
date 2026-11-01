@@ -496,19 +496,6 @@ void StatusDot(bool online) {
     ImGui::Dummy(ImVec2(size, ImGui::GetFrameHeight()));
 }
 
-// The community's Discord server: bug reports, questions, ban appeals.
-constexpr const char* kCommunityDiscord = "https://discord.gg/PAT5SJzdXw";
-
-void CommunityDiscordLine(const char* why) {
-    ImGui::TextDisabled("%s", why);
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted(kCommunityDiscord + 8); // without https://
-    ImGui::SameLine();
-    if (ImGui::SmallButton(BbSettings::MenuText("Open", "Открыть"))) SDL_OpenURL(kCommunityDiscord);
-    ImGui::SameLine();
-    if (ImGui::SmallButton(BbSettings::MenuText("Copy link", "Копировать"))) SDL_SetClipboardText(kCommunityDiscord);
-}
-
 // The Report tab's player (filled in by a search result's Report button in the Friends tab, which
 // also brings that tab up).
 char g_report_who[RF_NAME] = "";
@@ -559,9 +546,6 @@ void ReportSection(const RfView& view, char (&who)[RF_NAME]) {
         }
         if (result == "sent") sent_here = false; // the fields are cleared; the next report starts anew
     }
-    ImGui::Spacing();
-    CommunityDiscordLine(BbSettings::MenuText("Bugs, questions or a ban appeal: our Discord",
-                                              "Ошибки, вопросы или обжалование бана: наш Discord"));
 }
 
 /// The players in the room the game talks to, with their round trip (src/runtime_net_ping.h), as

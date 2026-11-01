@@ -9,7 +9,7 @@ Open **Actions → Build and release → Run workflow**, choose `main`, and run 
 From a shell with GitHub CLI authentication, the equivalent command is:
 
 ```bash
-gh workflow run release.yml --ref main -R Ryu7w7/OCTR-NitroFueled-PC
+gh workflow run release.yml --ref main -R GetLostIn/CTR-NitroFueled-PC
 ```
 
 To build and publish automatically, push a new `v*` tag on a commit that contains the workflow. For example, after pushing the commit to `main`:

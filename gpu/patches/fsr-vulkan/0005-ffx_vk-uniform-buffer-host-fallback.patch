@@ -1,0 +1,57 @@
+From: bbport
+Subject: [PATCH] ffx_vk: uniform buffers fall back to host memory when the BAR heap is full
+
+The FFX 1.1.4 Vulkan backend puts its constant buffers in device-local
+host-visible memory and falls back to plain host memory only when no such type
+exists. Without Resizable BAR that heap is 214-256 MB and the game streams
+through it: once it is full, vkAllocateMemory fails and the FSR 3 upscaler
+context cannot be created ("out of memory" while VRAM is mostly free). Retry in
+host-visible memory instead.
+
+---
+diff --git a/upstream/ffx-1.1.4/sdk/src/backends/vk/ffx_vk.cpp b/upstream/ffx-1.1.4/sdk/src/backends/vk/ffx_vk.cpp
+index d3e4eac..3c17779 100644
+--- a/upstream/ffx-1.1.4/sdk/src/backends/vk/ffx_vk.cpp
++++ b/upstream/ffx-1.1.4/sdk/src/backends/vk/ffx_vk.cpp
+@@ -1346,6 +1346,18 @@ FfxConstantAllocation BackendContext_VK::FallbackConstantAllocator(void* data, F
+ 
+         if (res == VK_SUCCESS)
+             res = vkFunctionTable.vkAllocateMemory(device, &allocInfo, nullptr, &uniformBufferMemory);
++        // bbport: the device-local host-visible heap (256 MB BAR without Resizable BAR) can be
++        // full of the game's own buffers: fall back to plain host memory, as when it is absent.
++        if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY || res == VK_ERROR_OUT_OF_HOST_MEMORY)
++        {
++            VkMemoryRequirements memRequirements = {};
++            vkFunctionTable.vkGetBufferMemoryRequirements(device, uniformBuffer, &memRequirements);
++            allocInfo.memoryTypeIndex = findMemoryTypeIndex(
++                physicalDevice, memRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
++                deviceCoherentMemoryEnabled, uniformBufferMemoryProperties);
++            if (allocInfo.memoryTypeIndex != UINT32_MAX)
++                res = vkFunctionTable.vkAllocateMemory(device, &allocInfo, nullptr, &uniformBufferMemory);
++        }
+         FFX_ASSERT(res == VK_SUCCESS);
+ 
+         if (res == VK_SUCCESS)
+@@ -1686,6 +1698,22 @@ FfxErrorCode CreateBackendContextVK(FfxInterface* backendInterface, FfxEffect ef
+ 
+             VkResult result = backendContext->vkFunctionTable.vkAllocateMemory(backendContext->device, &allocInfo, nullptr, &backendContext->uniformBufferMemory);
+ 
++            // bbport: the device-local host-visible heap (256 MB BAR without Resizable BAR)
++            // can be full of the game's own buffers: fall back to plain host memory, as when
++            // that heap does not exist.
++            if ((result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_HOST_MEMORY) &&
++                (requiredMemoryProperties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
++            {
++                allocInfo.memoryTypeIndex = findMemoryTypeIndex(
++                    backendContext->physicalDevice,
++                    memRequirements,
++                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
++                    backendContext->deviceCoherentMemoryEnabled,
++                    backendContext->uniformBufferMemoryProperties);
++                if (allocInfo.memoryTypeIndex != UINT32_MAX)
++                    result = backendContext->vkFunctionTable.vkAllocateMemory(backendContext->device, &allocInfo, nullptr, &backendContext->uniformBufferMemory);
++            }
++
+             if (result != VK_SUCCESS)
+             {
+                 switch (result)

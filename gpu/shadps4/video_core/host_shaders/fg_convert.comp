@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// SacredFire: frame generation copy pass (docs/sacredfire/16-framegen.md).
+// FSR 3.1.6 frame generation takes R8G8B8A8_UNORM frames while the presenter's are often
+// BGRA (and sRGB): the frame is read raw through a UNORM view and written to an RGBA8 image,
+// and the generated frame goes back the same way, red and blue swapped for BGRA targets.
+#version 450
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(binding = 0) uniform sampler2D source_tex;
+layout(binding = 1, rgba8) uniform writeonly image2D target_img;
+layout(push_constant) uniform Params {
+    int swap_red_blue; // 0: copy, 1: swap red and blue
+};
+
+void main() {
+    const ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    if (any(greaterThanEqual(pixel, imageSize(target_img)))) {
+        return;
+    }
+    vec4 c = texelFetch(source_tex, pixel, 0);
+    if (swap_red_blue != 0) {
+        c = c.bgra;
+    }
+    imageStore(target_img, pixel, c);
+}

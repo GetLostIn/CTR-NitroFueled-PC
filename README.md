@@ -2,24 +2,21 @@
   <img src="docs/images/logo.png" alt="CTR Nitro-Fueled PC" width="360">
 </p>
 
-# OCTR: CTR Nitro-Fueled PC, online
+# CTR-NitroFueled-PC
 
 > **EU mod packages:** [CUSA14876 01.21 loader support and update instructions](docs/eu-mod-packages.md).
 > [CNK Drift Gauge + Reserves Meter — EU](https://github.com/Majed-allababedi/CTR-CNK-Drift-Gauge-EU): original mod by tomtotom, EU adaptation by Majed-allababedi. Select **Speedometer HUD** in-game.
 
-**Crash Team Racing: Nitro-Fueled (PS4, CUSA13795 v1.21) running natively on Windows 10/11 and
-Linux, with online play on a community server.**
+**Crash Team Racing: Nitro-Fueled (PS4, CUSA13795 & CUSA14876 v1.21) running natively on Windows 10/11 and
+Linux, with online play.**
 
-This is the online fork of [GetLostIn's CTR-NitroFueled-PC](https://github.com/GetLostIn/CTR-NitroFueled-PC),
-the Windows build of [SacredFire](https://github.com/T3CHNOLOG1C/SacredFire), the native Linux
+This is a Windows and Linux port of [SacredFire](https://github.com/T3CHNOLOG1C/SacredFire), the native Linux
 port of the game by T3CHNOLOG1C. The game's own x86-64 code runs directly on the CPU, a small
 runtime replaces the PS4 system libraries, and a renderer derived from shadPS4 translates the PS4
 GPU work to Vulkan. The Windows layer (loader, memory, TLS, exceptions, files, timers) comes from
 Supermedo's Windows port of bbport: see [packaging/windows/README.md](packaging/windows/README.md).
 
-On top of that, this fork adds **online play** (see [Online](#online) below): public races,
-private rooms, groups, friends and the Pit Stop through the RyuNET server, with your own
-nickname, Discord account linking and Discord invites.
+On top of that, this build includes **online play** (see [Online](#online) below), **European (CUSA14876 v1.21) and Arabic support**, **AMD FSR 3.1 Frame Generation**, **Native Vulkan renderer**, and **Mod package support**.
 
 > **No game files are included.** You need your own dump of the game and its 1.21 update.
 > Both builds of the 1.21 update work: the one for firmware 5.05 (the reference) and the one for
@@ -41,29 +38,7 @@ compile them; the few the recipe lacks are compiled when first seen and cached.
 
 | Release | What it brought |
 |---|---|
-| [v0.7.5](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.7.5) | Another player's racer from a mod you don't have shows as Crash instead of freezing the lobby at 0; Itemless no longer carries over to public races (no items, Tiger Temple's door open); Discord invites with mods on (Vo1dTear); a clear message when an antivirus blocks the game |
-| [v0.7.4](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.7.4) | Private online cups: four tracks with the game's points and a podium from the totals (n0buholic); a native Graphics page and no crash opening Options in a race (n0buholic); Speed Mode renamed Itemless, where bumping another kart keeps your reserves (n0buholic); experimental 16:10 (david-labib); AMD FSR 4 (experimental, shown only with its model files; GetLostIn's wiring); crash signatures in the anonymous performance data |
-| [v0.7.3](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.7.3) | Native Vulkan: faster (translated shaders about half as heavy, no hitches from descriptor sets, a lighter capture thread in the adventure hub), Hyper Spaceway's dark sheet of triangles and Assembly Lane's whitish steam fixed; a damaged game file no longer stops online at start (Speed Mode is skipped); Graphics and Quit Game in Arabic (Majed-allababedi) |
-| [v0.7.2](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.7.2) | Online with a 21:9/32:9 layout starts again (amscova); Aspect Ratio in the in-game Graphics menu (immaculatevibes2025); EU 1.21 gets the Graphics menu, Quit Game and private Speed Mode (n0buholic), the native Vulkan engine and the faster loading; native Vulkan: the sun's glow and lens flares, and fur without holes on AMD GPUs |
-| [v0.7](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.7) | Native Vulkan engine as an experimental choice in the launcher (straightarrows), with a shader build window; Speed Mode for private rooms, synced to the players who join (n0buholic); loading screens about half as long (liblzma decoding, n0buholic, and a RAM cache); motion blur off by default; older GPUs start again; opt-in anonymous performance reports; foldable friends list; in-game Graphics menu, Quit Game, Skip intro and the MSAA sky lines fixed on NVIDIA (immaculatevibes2025) |
-| [v0.6.5](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.6.5) | Online item-box odds set by the server; 21:9/32:9 layouts render at the chosen internal resolution up to 4K (startupandhold); mods start at any internal resolution (Vo1dTear), EU mod packages (Majed-allababedi) and several name mods together (SoyAlejandroCalixto); no code 20 at a first start without GitHub; nicknames register behind ISP filters; GPUs without sparse buffers get a clear message |
-| [v0.6.4](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.6.4) | Mods checked at the code they change, so they work on more 1.21 dumps (tcosi); mods import from deep folders; no freeze when a controller connects or drops (SoyAlejandroCalixto); the Controllers tab shows each player's controller; Linux launcher with Achievements and Mods (Brony666); a racer's outfit no longer ends the game with code 3 |
-| [v0.6.3](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.6.3) | Mod fixes: game mods start again without a 21:9/32:9 layout, "Apply and restart" works with mods, and loose mods work with the game on another drive |
-| [v0.6.2](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.6.2) | Mods load without copying the game (tcosi); ping counter in the corner and a Room tab in the in-game menu; online login goes through networks and antivirus filters that redirect it; GameBanana link on the Mods page |
-| [v0.6.1](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.6.1) | Xbox button prompts (option); split screen assigns controllers automatically and players 2-4 play as guests (no extra saves); ping of the players in the room (in-game menu); Report in its own tab; mouse buttons and the wheel in the key bindings; online works with a PC clock that is off, and the login is no longer held by antivirus web shields; a new folder can bring the settings, saves and nickname of another installation; a nickname taken by another installation on the same PC is recovered; the Mods page (tcosi); ultrawide on every 1.21 build the layout fits (tcosi); DLC on Linux (Vo1dTear); controller ownership in split screen (n0buholic) |
-| [v0.6](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.6) | Friends inside the game (search, requests, invitations, notices when they come online; the game's Invite button works); report players from the game, reviewed by the server's moderators (bans, cheated records removed); messages and announcements from the administrators as in-game notices; online rules and the community Discord in the launchers, which also say why a player is banned; online races end 30 s after the first player finishes; notice position and a notice when a new version is out; the Linux AppImage updates itself; NVIDIA laptops on Linux; a GPU without Vulkan 1.3 is named as such instead of code 23 (code 23 itself is not fixed); the NAT test detects networks that drop the server's replies; identical controllers in split screen. Versions 0.4.1 and older can no longer play online |
-| [v0.5.4](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.5.4) | Every race track in public matchmaking, at the same chance (Koala Carnival and the later Grand Prix tracks included); regional relays for the online tunnel; corrected 21:9 and 32:9 menus and centered HUD (tcosi; USA and EU 1.21, offline); CPUs without MOVBE/BMI1/LZCNT (Sandy and Ivy Bridge) can play; achievements with in-game notices and a launcher page; the in-game menu in Spanish, General tab first; a badly extracted game is reported instead of a code 3 (contributions from GetLostIn's repository by MetaHeart and Naif Alqurashi). Code 23 is not fixed and can still happen. |
-| [v0.5.3](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.5.3) | The European edition (CUSA14876, with or without its 1.21 update), online with the USA one; ultrawide screens; the first start prepares the game's shaders for your GPU (far fewer stalls in the first races); one more cause of the code 23 GPU hang removed (a stale GPU idle signal; code 23 itself is not fixed and can still happen); shadPS4 crash fixes; Bluetooth controllers no longer drop from rumble; the launcher checks for updates and installs them keeping your files; the Linux launcher gets the Windows options (volume, player per controller, window settings, more languages, patches) |
-| [v0.5.2](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.5.2) | Two causes of the code 23 GPU hang mitigated (garbage buffer descriptors, a minimised window) and more detail in crash logs; Linux launcher close to the Windows one: controls, DLC, friends, internal resolution, Discord account link, status and invites (also from Steam), AppImage icon, Steam shortcut that survives updates |
-| [v0.5.1](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.5.1) (pre-release) | Fix for the code 3 crash at start; the game no longer stops when VRAM runs short; GPU hangs (code 23) report their cause in the log; a server tunnel for players who cannot reach each other directly; redesigned launcher, now named *Crash™ Team Racing Nitro-Fueled*, in nine languages, with the NAT type on its Play page; Linux launcher: FPS limit, Unlock Everything, in-game settings kept |
-| [v0.5](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.5) | Your own online nickname, linked to your Discord account and recoverable on any PC; Discord invites that join a private room directly; Discord presence; game volume (0-200%); keyboard as a split-screen player; optional "Unlock Everything" patch; Pit Stop items from the server or from your save; players on the same network can join each other; fixes for error code 3 and for some causes of code 23; first Linux AppImage of this fork |
-| [v0.4](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.4) | Private matches and groups; the in-game friends list |
-| [v0.3 online](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.3) | First online build: matchmaking, lobbies and the Pit Stop on the RyuNET server; Online section in the launcher (server and nickname); hostnames for the server; bundled Python 3.14 |
-
-Earlier releases, from [GetLostIn's repository](https://github.com/GetLostIn/CTR-NitroFueled-PC):
-
-| Release | What it brought |
-|---|---|
+| [v0.4](https://github.com/GetLostIn/CTR-NitroFueled-PC/releases/tag/v0.4) | Redesigned launcher with a *Controls* tab (live controller test and rumble, players 1-4, gamepad buttons remapped by pressing them, stick dead zone; the keyboard page moves there); *Achievements*: trophies kept when unlocked, a launcher-style notice in the game (picture, name, grade, what it was for) and a tab with all 48 (picture, name, what to do, progress and dates); the in-game menu restyled in tabs, in Spanish or English; game languages per edition; AMD FSR 4 (experimental) in the *Upscaling* list; *Frame generation* (AMD FSR 3, experimental): an interpolated frame between each pair of game frames; *Aspect ratio* 16:9, 21:9 UltraWide or 32:9 Super UltraWide with centered HUD (by tcosi, in Settings > Display, not Patches); the European edition CUSA14876 (by martijnhe), ultrawide included; the game's 2x MSAA as a setting, off by default (fixes dotted sky lines); CPUs without MOVBE/BMI1/LZCNT (by MetaHeart); damaged dumps reported (by Naif Alqurashi); rare libwinpthread crashes fixed; FSR 3 no longer turns off without Resizable BAR |
 | [v0.3](https://github.com/GetLostIn/CTR-NitroFueled-PC/releases/tag/v0.3) | Internal resolution 480p to native 4K (the game's own render scale; replaces the PS4 Pro switch); one *Upscaling* list: AMD FSR 1, AMD FSR 3.1 or NVIDIA DLSS (temporal, experimental) with DLSS quality modes, output and model (Transformer/CNN); game languages of this build (English, Latin American Spanish, French, Brazilian Portuguese); PS4 PKG Tool dumps (Image0 + Sc0); fullscreen switch in game fixed |
 | [v0.2.1](https://github.com/GetLostIn/CTR-NitroFueled-PC/releases/tag/v0.2.1) | The 1.21 update built for firmware 6.72+ is accepted (patches found by signature); keyboard page in the launcher to rebind keys |
 | [v0.2.0](https://github.com/GetLostIn/CTR-NitroFueled-PC/releases/tag/v0.2.0) | Launcher (`CTR-NitroFueled-PC.exe`): game setup with hard-link merge, settings, patches, save backups and imports, optional DLC; bundled Python; the project's icon |
@@ -72,22 +47,21 @@ Earlier releases, from [GetLostIn's repository](https://github.com/GetLostIn/CTR
 ### Quick start (Windows)
 
 **Easiest: the portable build.** Download `CTR-NitroFueled-PC-portable-<version>-windows.zip`
-from [Releases](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases), unzip it anywhere and
-open **`Crash™ Team Racing Nitro-Fueled.exe`** (`CTR-NitroFueled-PC.exe` before v0.5.1), the launcher: choose your `CUSA13795` (base game) and
-`CUSA13795-patch` (update 1.21) folders, press *Prepare the game* once (it merges them with hard
+from [Releases](https://github.com/GetLostIn/CTR-NitroFueled-PC/releases), unzip it anywhere and
+open **`CTR-NitroFueled-PC.exe`**, the launcher: choose your `CUSA13795` or `CUSA14876` (base game) and
+update 1.21 folders, press *Prepare the game* once (it merges them with hard
 links, no extra disk space) and then *Play*. Python is bundled; you only need a Vulkan 1.3 GPU.
 
 **Updating:** unzip the new version over your folder to keep your settings, saves and nickname
 key, or unzip it into a new folder and copy `user\`, `bbport.ini`, `launcher.ini` and
 `ryunet_online.key` across.
 
-**Linux and Steam Deck:** Download the AppImage from the same Releases page (see [AppImage](#appimage-steam-deck) below). The v0.5 asset is `SacredFire-x86_64.AppImage`; automated releases use `SacredFire-<version>-x86_64.AppImage`. Data, saves and the nickname key live in `~/.local/share/sacredfire`.
+**Linux and Steam Deck:** Download the AppImage from the same Releases page (see [AppImage](#appimage-steam-deck) below). Data, saves and the nickname key live in `~/.local/share/sacredfire`.
 
 ### Online
 
-Online is on by default and connects to the community server **octr.ryu7w7.xyz**
-([RyuNET](https://github.com/Ryu7w7/ryunet-demonware-ctr), a Demonware server written for this
-game). From the game's own menus you can:
+Online connects to the community server **octr.ryu7w7.xyz** by default (or any compatible custom
+server). From the game's own menus you can:
 
 - race in **public matches** with other players, alone or with your **group**;
 - create **private rooms** and invite your friends;
@@ -109,7 +83,7 @@ with a nickname keeps it, through the key in `ryunet_online.key` (copied to
   invite sent from Discord drops the friend who accepts it straight into your private room.
 
 **Playing offline:** turn online off in the launcher's Online tab, or set `BB_ONLINE=0`. The
-server address can be changed there too, to play on your own RyuNET server.
+server address can be changed there too, to play on your own private server.
 
 **Connection problems:** the game connects players directly to each other (UDP port 3074), as
 on the PS4. Some home connections (strict NAT, mobile data, carrier-grade NAT) cannot reach some
@@ -162,7 +136,7 @@ choose a folder, the launcher says in green or red what it found.
 
 Both builds of the 1.21 update work (for firmware 5.05 and for 6.72+). If something fails, the
 launcher's log and `user\last_run.log` say which file is missing; attach `last_run.log` when you
-[open an issue](https://github.com/Ryu7w7/OCTR-NitroFueled-PC/issues).
+[open an issue](https://github.com/GetLostIn/CTR-NitroFueled-PC/issues).
 
 **Or build it yourself:**
 
@@ -203,7 +177,6 @@ This fork stands on the work of:
   and GeForce RTX are trademarks and/or registered trademarks of NVIDIA Corporation. The GPL
   program contains no NVIDIA code: it loads the separate bridge DLL when present.
 - Windows port of SacredFire: [GetLostIn](https://github.com/GetLostIn), with Claude (Anthropic).
-- Online (this fork) and the RyuNET server: [Ryu7w7](https://github.com/Ryu7w7), with Claude (Anthropic).
 - **[leomoon](https://github.com/leomoon)**: Linux crash diagnostics.
 - **Camiloop**: the "Unlock Everything" patch.
 

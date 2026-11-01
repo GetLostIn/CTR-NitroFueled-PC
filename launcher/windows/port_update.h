@@ -17,7 +17,7 @@
 
 namespace PortUpdate {
 
-inline constexpr const char* kRepo = "Ryu7w7/OCTR-NitroFueled-PC";
+inline constexpr const char* kRepo = "GetLostIn/CTR-NitroFueled-PC";
 inline constexpr const char* kPackageFolder = "CTR-NitroFueled-PC-portable";  // the ZIP's top folder
 
 /// A version as builds and tags name it: v<major>.<minor>[.<patch>][suffix]. A git-describe

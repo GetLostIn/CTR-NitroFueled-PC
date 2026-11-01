@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Shared RyuNET launch settings for the Windows and Linux runners."""
+"""Shared online launch settings for the Windows and Linux runners."""
 import argparse
 import os
 import sys
@@ -27,7 +27,7 @@ def main():
     env = dict(os.environ)
     try:
         setup_online(env, args.config, args.data)
-        message = f"RyuNET Online configured for {env.get('BB_ONLINE_NAME', 'offline')}"
+        message = f"Online configured for {env.get('BB_ONLINE_NAME', 'offline')}"
     except Exception as e:
         print(f"Online setup warning: {e}", file=sys.stderr)
         message = None
@@ -40,7 +40,7 @@ def main():
         for key in EXPORT_KEYS:
             if key in env:
                 output.write(f"{key}={env[key]}".encode("utf-8") + b"\0")
-    print(message or "RyuNET Online disabled")
+    print(message or "Online disabled")
 
 
 if __name__ == "__main__":

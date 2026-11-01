@@ -96,6 +96,13 @@ inline constexpr int DlssQualityCount = 6;
 inline constexpr int DlssOutputHeights[] = {1080, 2160};
 /// bbport.ini dlss_model: transformer (NVIDIA's default presets K/L/M) or cnn (preset E).
 inline constexpr const char* DlssModelNames[] = {"transformer", "cnn"};
+/// v0.3 frame generation (bbport.ini framegen=off|fsr3): interpolates one frame between each two
+/// presented frames with FidelityFX FSR 3.1 FrameInterpolation (vk_ctr_framegen).
+enum FrameGen : int { FrameGenOff = 0, FrameGenFsr3 = 1, FrameGenCount = 2 };
+inline constexpr const char* FrameGenNames[FrameGenCount] = {"off", "fsr3"};
+/// Motion vectors for frame generation (bbport.ini framegen_motion=flow|game): optical flow alone
+/// (default), or optical flow with the game's motion vectors.
+inline constexpr const char* FrameGenMotionNames[2] = {"flow", "game"};
 
 struct Values {
     std::array<std::array<char, 64>, ControllerPorts> ports{}; ///< guarded by PortsMutex()
@@ -126,6 +133,9 @@ struct Values {
     /// patch lets the game run as fast as the machine goes; 60 is the pace it was made for.
     /// Applies at once. BB_FPS_LIMIT overrides it.
     std::atomic<int> fps_limit{60};
+    /// v0.3 frame generation (FrameGen: off, FSR 3). Applies at once. BB_FRAMEGEN overrides it.
+    std::atomic<int> framegen{FrameGenOff};
+    std::atomic<int> framegen_motion{0}; ///< 0 optical flow, 1 game motion vectors + optical flow
     /// SacredFire: graphics pipelines compiled on worker threads (BB_ASYNC_PIPELINES): a new
     /// shader no longer stops the game; a pass drawn every frame may miss a frame or two.
     /// Experimental (STATUS.md, issue #2). Applies at once. BB_ASYNC_PIPELINES overrides it.

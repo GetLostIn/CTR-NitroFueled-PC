@@ -1,0 +1,274 @@
+From: bbport
+Subject: [PATCH] 3.1.5 bridge: constant buffers from persistent slabs
+
+Frame generation stages one constant buffer per pass (dozens per frame) and
+the bridge gave each its own VkBuffer + vkAllocateMemory, freed frames later.
+On Windows every allocation is a kernel call counted against the driver's
+maxMemoryAllocationCount; with the game's own allocations the churn could make
+other creations fail (the FSR 3 upscaler context: out of memory) after a while.
+Stage into 256 KiB mapped slabs instead, reused once their newest frame retired.
+
+---
+diff --git a/src/ffx_vk_fsr3_3_1_5_bridge.cpp b/src/ffx_vk_fsr3_3_1_5_bridge.cpp
+index 2ac0e2e..5771b91 100755
+--- a/src/ffx_vk_fsr3_3_1_5_bridge.cpp
++++ b/src/ffx_vk_fsr3_3_1_5_bridge.cpp
+@@ -48,13 +48,28 @@ struct BridgeResource {
+     bool imported = false;
+ };
+ 
++/* bbport: a staged constant buffer is a range of a persistent, mapped slab
++ * (BridgeConstantSlab) instead of its own VkBuffer + vkAllocateMemory: frame
++ * generation stages one per pass, dozens per frame, and on Windows drivers each
++ * allocation is a kernel call counted against maxMemoryAllocationCount. */
+ struct BridgeConstantBuffer {
+-    VkBuffer buffer = VK_NULL_HANDLE;
+-    VkDeviceMemory memory = VK_NULL_HANDLE;
++    VkBuffer buffer = VK_NULL_HANDLE; /* the slab's buffer, not owned */
++    VkDeviceSize offset = 0u;
+     VkDeviceSize size = 0u;
+     uint64_t frameId = 0u;
+ };
+ 
++struct BridgeConstantSlab {
++    VkBuffer buffer = VK_NULL_HANDLE;
++    VkDeviceMemory memory = VK_NULL_HANDLE;
++    uint8_t* mapped = nullptr;
++    VkDeviceSize capacity = 0u;
++    VkDeviceSize used = 0u;
++    bool coherent = true;
++    /* Newest frame that staged into this slab; reusable once that frame retired. */
++    uint64_t lastFrameId = 0u;
++};
++
+ struct BridgeDescriptorSet {
+     FfxVkFsr3_3_1_5DescriptorSet descriptorSet{};
+     uint64_t frameId = 0u;
+@@ -69,6 +84,11 @@ struct FfxVkFsr3_3_1_5Bridge {
+     std::mutex mutex;
+     std::vector<std::unique_ptr<BridgeResource>> resources;
+     std::vector<std::unique_ptr<BridgeConstantBuffer>> constantBuffers;
++    std::vector<std::unique_ptr<BridgeConstantSlab>> constantSlabs;
++    BridgeConstantSlab* currentSlab = nullptr;
++    VkDeviceSize uniformAlignment = 0u;
++    VkDeviceSize nonCoherentAtom = 1u;
++    uint64_t retiredFrameId = 0u;
+     /* Retain descriptors and staged constants until the embedding application
+      * proves the command buffer complete.  The next public lifecycle layer
+      * will recycle these against a caller fence; retaining is deliberately
+@@ -237,15 +257,22 @@ static bool create_image_views(FfxVkFsr3_3_1_5Bridge* bridge, BridgeResource* re
+     return true;
+ }
+ 
+-static void destroy_constant_buffer(FfxVkFsr3_3_1_5Bridge* bridge,
+-                                    BridgeConstantBuffer* constantBuffer)
++static void destroy_constant_buffer(FfxVkFsr3_3_1_5Bridge*, BridgeConstantBuffer*)
++{
++    /* bbport: the range belongs to a slab (destroy_constant_slab). */
++}
++
++static void destroy_constant_slab(FfxVkFsr3_3_1_5Bridge* bridge, BridgeConstantSlab* slab)
+ {
+-    if (!bridge || !constantBuffer)
++    if (!bridge || !slab)
+         return;
+-    if (constantBuffer->buffer != VK_NULL_HANDLE)
+-        vkDestroyBuffer(bridge->device, constantBuffer->buffer, bridge->allocationCallbacks);
+-    if (constantBuffer->memory != VK_NULL_HANDLE)
+-        vkFreeMemory(bridge->device, constantBuffer->memory, bridge->allocationCallbacks);
++    if (slab->mapped)
++        vkUnmapMemory(bridge->device, slab->memory);
++    if (slab->buffer != VK_NULL_HANDLE)
++        vkDestroyBuffer(bridge->device, slab->buffer, bridge->allocationCallbacks);
++    if (slab->memory != VK_NULL_HANDLE)
++        vkFreeMemory(bridge->device, slab->memory, bridge->allocationCallbacks);
++    *slab = {};
+ }
+ 
+ static void destroy_descriptor_set(BridgeDescriptorSet* descriptorSet)
+@@ -466,6 +493,7 @@ static bool record_compute_job(FfxVkFsr3_3_1_5Bridge* bridge,
+                 constantBuffer->size == 0u)
+                 return false;
+             descriptor.buffer = constantBuffer->buffer;
++            descriptor.bufferOffset = constantBuffer->offset;
+             descriptor.bufferRange = constantBuffer->size;
+             ++descriptorCount;
+             break;
+@@ -612,6 +640,8 @@ extern "C" void ffxVkFsr3_3_1_5DestroyBridge(FfxVkFsr3_3_1_5Bridge* bridge)
+         destroy_constant_buffer(bridge, constantBuffer.get());
+     for (const std::unique_ptr<BridgeDescriptorSet>& descriptorSet : bridge->descriptorSets)
+         destroy_descriptor_set(descriptorSet.get());
++    for (const std::unique_ptr<BridgeConstantSlab>& slab : bridge->constantSlabs)
++        destroy_constant_slab(bridge, slab.get());
+     delete bridge;
+ }
+ 
+@@ -811,70 +841,116 @@ extern "C" FfxErrorCode ffxVkFsr3_3_1_5BridgeGetDeviceCapabilities(
+     return FFX_OK;
+ }
+ 
+-extern "C" FfxErrorCode ffxVkFsr3_3_1_5BridgeStageConstantBufferData(
+-    FfxInterface* backend, void* data, FfxUInt32 size, FfxConstantBuffer* outConstantBuffer)
++static BridgeConstantSlab* create_constant_slab(FfxVkFsr3_3_1_5Bridge* bridge,
++                                                VkDeviceSize capacity)
+ {
+-    FfxVkFsr3_3_1_5Bridge* bridge = bridge_from(backend);
+-    std::unique_ptr<BridgeConstantBuffer> constantBuffer(new (std::nothrow) BridgeConstantBuffer);
++    std::unique_ptr<BridgeConstantSlab> slab(new (std::nothrow) BridgeConstantSlab);
++    if (!slab)
++        return nullptr;
+     VkBufferCreateInfo bufferInfo{};
+-    VkMemoryRequirements requirements{};
+-    VkMemoryAllocateInfo allocationInfo{};
+-    if (!bridge || !data || !outConstantBuffer)
+-        return static_cast<FfxErrorCode>(FFX_ERROR_INVALID_POINTER);
+-    if (bridge->physicalDevice == VK_NULL_HANDLE || size == 0u || size % sizeof(uint32_t) != 0u)
+-        return static_cast<FfxErrorCode>(FFX_ERROR_INVALID_ARGUMENT);
+-    if (!constantBuffer)
+-        return static_cast<FfxErrorCode>(FFX_ERROR_OUT_OF_MEMORY);
+     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+-    bufferInfo.size = size;
++    bufferInfo.size = capacity;
+     bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+     if (vkCreateBuffer(bridge->device, &bufferInfo, bridge->allocationCallbacks,
+-                       &constantBuffer->buffer) != VK_SUCCESS)
+-        return static_cast<FfxErrorCode>(FFX_ERROR_BACKEND_API_ERROR);
+-    vkGetBufferMemoryRequirements(bridge->device, constantBuffer->buffer, &requirements);
++                       &slab->buffer) != VK_SUCCESS)
++        return nullptr;
++    VkMemoryRequirements requirements{};
++    vkGetBufferMemoryRequirements(bridge->device, slab->buffer, &requirements);
++    VkMemoryAllocateInfo allocationInfo{};
+     allocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+     allocationInfo.allocationSize = requirements.size;
++    /* Plain host memory first (coherent), never the small device-local BAR heap
++     * the game streams through; any host-visible type as the fallback. */
+     allocationInfo.memoryTypeIndex = find_memory_type(
+         bridge->physicalDevice, requirements.memoryTypeBits,
+-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
++        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
++    if (allocationInfo.memoryTypeIndex == UINT32_MAX)
++        allocationInfo.memoryTypeIndex = find_memory_type(
++            bridge->physicalDevice, requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
++    void* mapped = nullptr;
+     if (allocationInfo.memoryTypeIndex == UINT32_MAX ||
+         vkAllocateMemory(bridge->device, &allocationInfo, bridge->allocationCallbacks,
+-                         &constantBuffer->memory) != VK_SUCCESS ||
+-        vkBindBufferMemory(bridge->device, constantBuffer->buffer, constantBuffer->memory, 0u) != VK_SUCCESS) {
+-        destroy_constant_buffer(bridge, constantBuffer.get());
+-        return static_cast<FfxErrorCode>(FFX_ERROR_OUT_OF_MEMORY);
++                         &slab->memory) != VK_SUCCESS ||
++        vkBindBufferMemory(bridge->device, slab->buffer, slab->memory, 0u) != VK_SUCCESS ||
++        vkMapMemory(bridge->device, slab->memory, 0u, VK_WHOLE_SIZE, 0u, &mapped) != VK_SUCCESS) {
++        destroy_constant_slab(bridge, slab.get());
++        return nullptr;
+     }
+-    void* mapped = nullptr;
+-    if (vkMapMemory(bridge->device, constantBuffer->memory, 0u, size, 0u, &mapped) != VK_SUCCESS) {
+-        destroy_constant_buffer(bridge, constantBuffer.get());
+-        return static_cast<FfxErrorCode>(FFX_ERROR_BACKEND_API_ERROR);
++    VkPhysicalDeviceMemoryProperties memoryProperties{};
++    vkGetPhysicalDeviceMemoryProperties(bridge->physicalDevice, &memoryProperties);
++    slab->coherent = (memoryProperties.memoryTypes[allocationInfo.memoryTypeIndex].propertyFlags &
++                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0u;
++    slab->mapped = static_cast<uint8_t*>(mapped);
++    slab->capacity = capacity;
++    BridgeConstantSlab* result = slab.get();
++    bridge->constantSlabs.emplace_back(std::move(slab));
++    return result;
++}
++
++extern "C" FfxErrorCode ffxVkFsr3_3_1_5BridgeStageConstantBufferData(
++    FfxInterface* backend, void* data, FfxUInt32 size, FfxConstantBuffer* outConstantBuffer)
++{
++    FfxVkFsr3_3_1_5Bridge* bridge = bridge_from(backend);
++    if (!bridge || !data || !outConstantBuffer)
++        return static_cast<FfxErrorCode>(FFX_ERROR_INVALID_POINTER);
++    if (bridge->physicalDevice == VK_NULL_HANDLE || size == 0u || size % sizeof(uint32_t) != 0u)
++        return static_cast<FfxErrorCode>(FFX_ERROR_INVALID_ARGUMENT);
++    std::unique_ptr<BridgeConstantBuffer> constantBuffer(new (std::nothrow) BridgeConstantBuffer);
++    if (!constantBuffer)
++        return static_cast<FfxErrorCode>(FFX_ERROR_OUT_OF_MEMORY);
++
++    std::lock_guard<std::mutex> lock(bridge->mutex);
++    if (bridge->uniformAlignment == 0u) {
++        VkPhysicalDeviceProperties properties{};
++        vkGetPhysicalDeviceProperties(bridge->physicalDevice, &properties);
++        bridge->uniformAlignment =
++            std::max<VkDeviceSize>(properties.limits.minUniformBufferOffsetAlignment, 16u);
++        bridge->nonCoherentAtom = std::max<VkDeviceSize>(properties.limits.nonCoherentAtomSize, 1u);
+     }
+-    std::memcpy(mapped, data, size);
+-    {
+-        VkPhysicalDeviceMemoryProperties memoryProperties{};
+-        vkGetPhysicalDeviceMemoryProperties(bridge->physicalDevice, &memoryProperties);
+-        if ((memoryProperties.memoryTypes[allocationInfo.memoryTypeIndex].propertyFlags &
+-             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0u) {
+-            VkMappedMemoryRange range{};
+-            range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+-            range.memory = constantBuffer->memory;
+-            range.size = size;
+-            if (vkFlushMappedMemoryRanges(bridge->device, 1u, &range) != VK_SUCCESS) {
+-                vkUnmapMemory(bridge->device, constantBuffer->memory);
+-                destroy_constant_buffer(bridge, constantBuffer.get());
+-                return static_cast<FfxErrorCode>(FFX_ERROR_BACKEND_API_ERROR);
++    const VkDeviceSize alignment = std::max(bridge->uniformAlignment, bridge->nonCoherentAtom);
++    const auto aligned = [alignment](VkDeviceSize value) {
++        return (value + alignment - 1u) / alignment * alignment;
++    };
++    const VkDeviceSize need = aligned(size);
++    static constexpr VkDeviceSize kSlabBytes = 256u * 1024u;
++    BridgeConstantSlab* slab = bridge->currentSlab;
++    if (!slab || aligned(slab->used) + need > slab->capacity) {
++        slab = nullptr;
++        /* A slab whose newest frame the GPU has finished is free again. */
++        for (const std::unique_ptr<BridgeConstantSlab>& candidate : bridge->constantSlabs) {
++            if (candidate.get() != bridge->currentSlab && candidate->capacity >= need &&
++                candidate->lastFrameId <= bridge->retiredFrameId) {
++                slab = candidate.get();
++                slab->used = 0u;
++                break;
+             }
+         }
++        if (!slab)
++            slab = create_constant_slab(bridge, std::max(kSlabBytes, need));
++        if (!slab)
++            return static_cast<FfxErrorCode>(FFX_ERROR_OUT_OF_MEMORY);
++        bridge->currentSlab = slab;
++    }
++    const VkDeviceSize offset = aligned(slab->used);
++    std::memcpy(slab->mapped + offset, data, size);
++    if (!slab->coherent) {
++        VkMappedMemoryRange range{};
++        range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
++        range.memory = slab->memory;
++        range.offset = offset;
++        range.size = need;
++        if (vkFlushMappedMemoryRanges(bridge->device, 1u, &range) != VK_SUCCESS)
++            return static_cast<FfxErrorCode>(FFX_ERROR_BACKEND_API_ERROR);
+     }
+-    vkUnmapMemory(bridge->device, constantBuffer->memory);
++    slab->used = offset + need;
++    slab->lastFrameId = std::max(slab->lastFrameId, bridge->activeFrameId);
++    constantBuffer->buffer = slab->buffer;
++    constantBuffer->offset = offset;
+     constantBuffer->size = size;
+     constantBuffer->frameId = bridge->activeFrameId;
+     outConstantBuffer->num32BitEntries = size / sizeof(uint32_t);
+     outConstantBuffer->data = reinterpret_cast<uint32_t*>(constantBuffer.get());
+-    {
+-        std::lock_guard<std::mutex> lock(bridge->mutex);
+-        bridge->constantBuffers.emplace_back(std::move(constantBuffer));
+-    }
++    bridge->constantBuffers.emplace_back(std::move(constantBuffer));
+     return FFX_OK;
+ }
+ 
+@@ -910,6 +986,7 @@ extern "C" void ffxVkFsr3_3_1_5BridgeRetireFrame(FfxVkFsr3_3_1_5Bridge* bridge,
+         constantBuffers.assign(std::make_move_iterator(constantEnd),
+                                std::make_move_iterator(bridge->constantBuffers.end()));
+         bridge->constantBuffers.erase(constantEnd, bridge->constantBuffers.end());
++        bridge->retiredFrameId = std::max(bridge->retiredFrameId, completedFrameId);
+     }
+     for (const std::unique_ptr<BridgeDescriptorSet>& item : descriptorSets)
+         destroy_descriptor_set(item.get());

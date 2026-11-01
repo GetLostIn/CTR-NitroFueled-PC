@@ -398,6 +398,25 @@ def locate(line, offset, elf):
     return hits[0]+shift
 
 
+def locate_expected(line, offset, elf):
+    """The image offset a line with Expected="..." writes to (checking Address and AlternateAddress)."""
+    expected=bytes.fromhex(line.get('Expected').replace(' ',''))
+    loads=load_segments(elf)
+    def matches(vaddr):
+        for start,pos,size in loads:
+            if start<=vaddr and vaddr+len(expected)-start<=size:
+                return elf[pos+vaddr-start:pos+vaddr-start+len(expected)]==expected
+        return False
+    candidates=[offset]
+    for token in (line.get('AlternateAddress') or '').replace(',',' ').split():
+        alt=int(token,0)-EBOOT_BASE
+        if alt not in candidates: candidates.append(alt)
+    hits=[cand for cand in candidates if matches(cand)]
+    if len(hits)!=1:
+        raise ValueError(f'patch site for {line.get("Address")} not verified ({len(hits)} expected matches)')
+    return hits[0]
+
+
 def encode(line):
     kind,value=line.get('Type'),line.get('Value')
     if kind=='bytes': return bytes.fromhex(value.replace(' ',''))
@@ -476,7 +495,7 @@ def compile_external(selected, segments, elf=None, strict=False, require_verific
             for line in meta.iter('Line'):
                 offset=int(line.get('Address') or '',0)-EBOOT_BASE
                 data=encode(line)
-                if require_verification and not (line.get('Signature') or line.get('ExpectedSHA256')):
+                if require_verification and not (line.get('Signature') or line.get('ExpectedSHA256') or line.get('Expected')):
                     raise ValueError('unverified executable write; update this mod with code signatures: '+str(line.get('Address')))
                 if line.get('Signature'):
                     if elf is None: raise ValueError('signature without the executable')
@@ -484,6 +503,11 @@ def compile_external(selected, segments, elf=None, strict=False, require_verific
                     if moved!=offset and line.get('ExpectedSHA256'):
                         raise ValueError('fixed-address code signature moved; this mod needs a port: '+str(line.get('Address')))
                     if moved!=offset: print(f'Patches: {key}: {line.get("Address")} found at {moved+EBOOT_BASE:#010x}')
+                    offset=moved
+                elif line.get('Expected'):
+                    if elf is None: raise ValueError('expected bytes without the executable')
+                    moved=locate_expected(line,offset,elf)
+                    if moved!=offset: print(f'Patches: {key}: {line.get("Address")} verified at {moved+EBOOT_BASE:#010x}')
                     offset=moved
                 if not any(start<=offset and offset+len(data)<=end for start,end in segments):
                     raise ValueError(f'address {line.get("Address")} is outside the eboot')

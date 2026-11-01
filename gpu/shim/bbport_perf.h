@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
-// SacredFire: the performance diagnostic's raw data. Every presented frame's time goes into a
+// SacredFire: frame timing histogram. Every presented frame's time goes into a
 // histogram; every 5 seconds one line goes to the game's log:
 //
 //   Perf: frames <n> ms <sum> worst <ms> long <n> h <count per bucket, comma separated>
 //
-// run.py (scripts/perf_report.py) groups those lines by track and, when the game ends, writes the
-// anonymous report (and sends it only when the player agreed). Frames of 250 ms or more (loading
-// screens) are counted as "long" and left out of the histogram.
+// Frames of 250 ms or more (loading screens) are counted as "long" and left out of the histogram.
 
 namespace BbPerf {
 

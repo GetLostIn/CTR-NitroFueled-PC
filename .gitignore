@@ -56,4 +56,15 @@ gpu/shim/bbport_gnm_table.inc
 /mod-state/
 /patches/OCTR-Mod-Library.xml
 /CUSA13795*/
+/CUSA14876*/
 *.pkg
+/CTR-NitroFueled-PC.exe
+/bin/
+/python/
+/shaders/
+/fsr4_shaders/
+/VERSION
+/host_overrides.json
+friends_migrated.txt
+last_run*.log
+sessions/

@@ -59,8 +59,6 @@ DATA_DIR = Path(os.environ.get("BB_DATA_DIR", PORT_DIR))
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "sacredfire-launcher"
 CONFIG_FILE = CONFIG_DIR / "settings.json"
 MAX_LOG_LINES = 5000
-COMMUNITY_DISCORD = "https://discord.gg/PAT5SJzdXw"  # bugs, questions, ban appeals
-RANK_SITE = "https://crashteamrank.vercel.app"  # record validation; ranked play later
 UNSUPPORTED_GPU_CODE = 24  # the game found no Vulkan 1.3 (GPU, driver or loader): vk_platform.h
 TITLE = "SacredFire"
 GAME = "Crash Team Racing: Nitro-Fueled"
@@ -275,13 +273,6 @@ def load_ini():
     return values, lines
 
 
-def perf_reports_text():
-    return tr("When the game closes, OCTR can send an anonymous summary of how your PC did: graphics card, "
-              "processor and memory, the graphics settings and the FPS of each track. Nothing personal: not "
-              "your nickname, your races or your friends, and your IP is not stored. It shows which PCs the "
-              "game needs to improve on. A copy always stays in the perf folder.")
-
-
 def save_ini(values, lines):
     """Rewrites the edited keys in place, appends missing ones, keeps every other line. A value
     of None removes its line (the game's default again)."""
@@ -433,7 +424,7 @@ def write_patch_config(enabled, disabled):
 MOD_PREFIX = "OCTR-Mod-Library.xml/Mod: "
 MOD_EXTENSIONS = (".pak", ".zip", ".xml")
 GAMEBANANA = "https://gamebanana.com/games/26138"  # the game's page, where the community shares mods
-MOD_GUIDE_URL = "https://github.com/Brony666/OCTR-NitroFueled-PC/blob/main/docs/mod-packaging.html"
+MOD_GUIDE_URL = "https://github.com/GetLostIn/CTR-NitroFueled-PC/blob/main/docs/mod-packaging.html"
 
 
 def mods_dir():
@@ -950,7 +941,6 @@ class LauncherWindow(Adw.ApplicationWindow):
         self.build()
         self.connect("close-request", self.on_close)
         GLib.timeout_add_seconds(1, self.tick)
-        GLib.timeout_add_seconds(2, lambda: self.ask_perf_reports() and False)
 
     def build(self):
         install_css()
@@ -1122,7 +1112,7 @@ class LauncherWindow(Adw.ApplicationWindow):
         game.add(self.language_row)
         page.add(game)
 
-        online = Adw.PreferencesGroup(title=tr("Online (RyuNET)"),
+        online = Adw.PreferencesGroup(title=tr("Online"),
                                       description=tr("Online races, private rooms and the Pit Stop. Your nickname is yours on the server: "
                                                      "this installation keeps it (ryunet_online.key in the data folder); "
                                                      "link it to Discord to recover it after a reinstall or on another PC."))
@@ -1174,15 +1164,6 @@ class LauncherWindow(Adw.ApplicationWindow):
             description="\n".join("• " + rule for rule in online_rules) + "\n\n" +
             tr("Breaking the rules can cost you your records and a ban from online play, temporary or permanent, "
                "also by IP."))
-        for title, button, url in (
-                (tr("Bugs, questions or a ban appeal: our Discord"), tr("Open Discord"), COMMUNITY_DISCORD),
-                (tr("Crash Team Rank: validate your records (ranked play with MMR coming)"), tr("Open page"), RANK_SITE)):
-            row = Adw.ActionRow(title=title)
-            row.set_title_lines(0)
-            open_button = flat_button("web-browser-symbolic", button, lambda _b, url=url: open_external(url))
-            row.add_suffix(open_button)
-            row.set_activatable_widget(open_button)
-            rules.add(row)
         page.add(rules)
 
         discord = Adw.PreferencesGroup(
@@ -1304,9 +1285,6 @@ class LauncherWindow(Adw.ApplicationWindow):
                         "(Insert or L3+R3), Room tab."),
             active=self.ini.get("show_ping") == "1")
         screen.add(self.ping_row)
-        self.perf_row = Adw.SwitchRow(title=tr("Send anonymous performance data"), subtitle=perf_reports_text(),
-                                      active=self.ini.get("perf_reports") == "1")
-        screen.add(self.perf_row)
         page.add(screen)
 
         sound = Adw.PreferencesGroup(title=tr("Sound"))
@@ -1589,8 +1567,6 @@ class LauncherWindow(Adw.ApplicationWindow):
         self.ini, self.ini_lines = load_ini()
         self.ini["show_fps"] = "1" if self.fps_row.get_active() else "0"
         self.ini["show_ping"] = "1" if self.ping_row.get_active() else "0"
-        if self.perf_row.get_active() or self.ini.get("perf_reports") in ("0", "1"):
-            self.ini["perf_reports"] = "1" if self.perf_row.get_active() else "0"  # unasked stays unasked
         self.ini["split_auto"] = "1" if self.split_auto_row.get_active() else "0"
         self.ini["button_prompts"] = combo_value(self.button_prompts_row)
         self.ini["async_pipelines"] = "1" if self.async_row.get_active() else "0"
@@ -1624,7 +1600,6 @@ class LauncherWindow(Adw.ApplicationWindow):
         self.fill_patches()
         self.fps_row.set_active(self.ini.get("show_fps") == "1")
         self.ping_row.set_active(self.ini.get("show_ping") == "1")
-        self.perf_row.set_active(self.ini.get("perf_reports") == "1")
         self.split_auto_row.set_active(self.ini.get("split_auto") != "0")
         prompts = self.ini.get("button_prompts", "playstation")
         self.button_prompts_row.set_selected(self.button_prompts_row.values.index(prompts)
@@ -2649,36 +2624,6 @@ class LauncherWindow(Adw.ApplicationWindow):
                 self.toasts.add_toast(Adw.Toast(title=tr("Could not reset: {}").format(error)))
             self.fill_trophies()
         self.confirm(tr("Lock every trophy again?"), tr("A copy is kept just in case."), tr("Reset"), reset)
-
-    def ask_perf_reports(self):
-        """The anonymous performance diagnostic (bbport.ini perf_reports, scripts/perf_report.py):
-        asked once, while it is neither 1 nor 0. A plain question, no alarm."""
-        if load_ini()[0].get("perf_reports") in ("0", "1"):
-            return
-
-        def answer(_dialog, response):
-            if response not in ("yes", "no"):
-                return
-            self.ini, self.ini_lines = load_ini()
-            self.ini["perf_reports"] = "1" if response == "yes" else "0"
-            save_ini(self.ini, self.ini_lines)
-            self.perf_row.set_active(response == "yes")
-
-        heading = tr("Help us improve OCTR?")
-        body = perf_reports_text() + "\n\n" + tr("You can change it any time in Settings.")
-        if hasattr(Adw, "AlertDialog"):
-            dialog = Adw.AlertDialog(heading=heading, body=body)
-        else:
-            dialog = Adw.MessageDialog(transient_for=self, heading=heading, body=body)
-        dialog.add_response("no", tr("No, thanks"))
-        dialog.add_response("yes", tr("Yes, send anonymous data"))
-        dialog.set_response_appearance("yes", Adw.ResponseAppearance.SUGGESTED)
-        dialog.set_close_response("")  # Escape asks again next time
-        dialog.connect("response", answer)
-        if hasattr(Adw, "AlertDialog"):
-            dialog.present(self)
-        else:
-            dialog.present()
 
     def inform(self, heading, body):
         """A message with a single OK."""

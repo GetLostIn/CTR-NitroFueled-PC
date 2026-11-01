@@ -56,7 +56,7 @@ static void Versions() {
 
 static void Releases() {
     const std::string answer = R"({
-      "url": "x", "html_url": "https://github.com/Ryu7w7/OCTR-NitroFueled-PC/releases/tag/v0.5.3",
+      "url": "x", "html_url": "https://github.com/GetLostIn/CTR-NitroFueled-PC/releases/tag/v0.5.3",
       "tag_name": "v0.5.3", "draft": false, "prerelease": false,
       "body": "Notes with \"quotes\", a \\ and é 😀\n- item",
       "assets": [
@@ -66,7 +66,7 @@ static void Releases() {
         {"name": "CTR-NitroFueled-PC-portable-v0.5.3-windows.zip", "size": 102586527,
          "digest": "sha256:972DF8BA69DDD3D9F829DF2CA696497D566F1DDB1012B41D5E619C96B311CE44",
          "browser_download_url": "https://github.com/x/CTR-NitroFueled-PC-portable-v0.5.3-windows.zip",
-         "uploader": {"login": "Ryu7w7", "id": 1}, "label": null}
+         "uploader": {"login": "GetLostIn", "id": 1}, "label": null}
       ]})";
     const auto r = ParseRelease(answer);
     CHECK(r.has_value());

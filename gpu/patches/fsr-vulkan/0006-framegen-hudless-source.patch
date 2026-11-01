@@ -1,0 +1,89 @@
+From: bbport
+Subject: [PATCH] 3.1.6 frame generation: optional HUD-less interpolation source
+
+PrepareInfo.colorHudless (same format/size as color): optical flow and frame
+interpolation run on it and FFX takes the HUD from the presented color
+(currentBackBuffer_HUDLess), so the HUD is not smeared by the scene motion.
+
+---
+diff --git a/include/ffx_vk_fsr3_3_1_5_bridge.h b/include/ffx_vk_fsr3_3_1_5_bridge.h
+index 863476c..636d16e 100755
+--- a/include/ffx_vk_fsr3_3_1_5_bridge.h
++++ b/include/ffx_vk_fsr3_3_1_5_bridge.h
+@@ -279,6 +279,10 @@ typedef struct FfxVkFsr3_3_1_6FrameGenerationPrepareInfo {
+     float cameraForward[3];
+     uint64_t frameId;
+     VkBool32 reset;
++    /* bbport: optional HUD-less copy of `color` (same format and size). When set it is the
++     * interpolation and optical-flow source, and Dispatch takes the HUD from `color`
++     * (FFX "HUDLess" mode) instead of interpolating it. Leave image null otherwise. */
++    FfxVkFsr3_3_1_6FrameGenerationImage colorHudless;
+ } FfxVkFsr3_3_1_6FrameGenerationPrepareInfo;
+ 
+ /* All floating-point fields supplied to Prepare and Dispatch must be finite.
+diff --git a/src/ffx_vk_fsr3_3_1_6_framegen.cpp b/src/ffx_vk_fsr3_3_1_6_framegen.cpp
+index 53bca44..3b00bce 100755
+--- a/src/ffx_vk_fsr3_3_1_6_framegen.cpp
++++ b/src/ffx_vk_fsr3_3_1_6_framegen.cpp
+@@ -309,6 +309,7 @@ struct FfxVkFsr3_3_1_6FrameGenerationContext {
+     VkImage preparedDepthImage = VK_NULL_HANDLE;
+     VkImage preparedMotionVectorImage = VK_NULL_HANDLE;
+     FfxApiResource color{};
++    FfxApiResource colorHudless{}; /* bbport: HUD-less interpolation source, or null */
+     OwnedSharedImage opticalFlowVector{};
+     OwnedSharedImage opticalFlowScd{};
+     OwnedSharedImage dilatedDepth{};
+@@ -491,6 +492,19 @@ ffxVkFsr3_3_1_6FrameGenerationContextRecordPrepare(
+         return FFX_VK_FSR3_3_1_6_FRAMEGEN_ERROR_OUT_OF_MEMORY;
+     }
+     context->pendingImports = {color, depth, motion};
++    /* bbport: HUD-less source (optional). */
++    context->colorHudless = {};
++    if (info->colorHudless.image != VK_NULL_HANDLE) {
++        if (!valid_image(info->colorHudless, context->colorFormat, context->displayWidth,
++                         context->displayHeight, false))
++            return FFX_VK_FSR3_3_1_6_FRAMEGEN_ERROR_INVALID_ARGUMENT;
++        const FfxVkFsr3_3_1_5Resource hudless =
++            import_frame_image(context->bridge, info->colorHudless, false);
++        context->colorHudless = ffxVkFsr3_3_1_5BridgeResolveResource(context->bridge, hudless);
++        context->pendingImports.push_back(hudless);
++        if (!context->colorHudless.resource)
++            return FFX_VK_FSR3_3_1_6_FRAMEGEN_ERROR_OUT_OF_MEMORY;
++    }
+     /* From this point a scheduler error may follow partially recorded Vulkan
+      * commands.  Retain every imported view until the caller retires the
+      * submitted/abandoned command buffer after its fence, rather than freeing
+@@ -504,7 +518,7 @@ ffxVkFsr3_3_1_6FrameGenerationContextRecordPrepare(
+     context->preparedMotionVectorImage = info->motionVectors.image;
+     FfxOpticalflowDispatchDescription flow{};
+     flow.commandList = reinterpret_cast<FfxCommandList>(info->commandBuffer);
+-    flow.color = context->color;
++    flow.color = context->colorHudless.resource ? context->colorHudless : context->color;
+     flow.opticalFlowVector = context->opticalFlowVector.resource;
+     flow.opticalFlowSCD = context->opticalFlowScd.resource;
+     flow.reset = info->reset == VK_TRUE;
+@@ -609,6 +623,8 @@ ffxVkFsr3_3_1_6FrameGenerationContextRecordDispatch(
+     dispatch.displaySize = {info->displayWidth, info->displayHeight};
+     dispatch.renderSize = {context->renderWidth, context->renderHeight};
+     dispatch.currentBackBuffer = context->color;
++    if (context->colorHudless.resource)
++        dispatch.currentBackBuffer_HUDLess = context->colorHudless;
+     dispatch.output = outputResource;
+     dispatch.interpolationRect = {static_cast<int32_t>(info->interpolationX),
+                                   static_cast<int32_t>(info->interpolationY),
+@@ -647,6 +663,7 @@ ffxVkFsr3_3_1_6FrameGenerationContextRecordDispatch(
+         return result_from_ffx(result);
+     context->retainedFrames.push_back({context->frameId, std::move(context->pendingImports)});
+     context->color = {};
++    context->colorHudless = {};
+     context->prepared = false;
+     context->dispatched = false;
+     context->renderWidth = 0u;
+@@ -669,6 +686,7 @@ ffxVkFsr3_3_1_6FrameGenerationContextRetireFrame(
+             ffxVkFsr3_3_1_5BridgeReleaseImportedImage(context->bridge, resource);
+         context->pendingImports.clear();
+         context->color = {};
++    context->colorHudless = {};
+         context->prepared = false;
+         context->dispatched = false;
+         context->renderWidth = 0u;

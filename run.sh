@@ -389,16 +389,4 @@ if [[ -n ${mod_game:-} || $mod_session_owner == 1 ]]; then
     fi
     exit "$mod_status"
 fi
-# The game's output reaches the launcher through scripts/perf_report.py (each line passed on as it
-# comes), which keeps the anonymous performance report's data; the report is made when the game
-# ends (and sent only with bbport.ini perf_reports=1, asked once by the launcher). BB_PERF_LOG=0:
-# the game is started as before.
-if [[ ${BB_PERF_LOG:-1} == 0 ]]; then exec "$probe" "${probe_args[@]}"; fi
-perf_state=$(mktemp "$out/perf-state.XXXXXX")
-set +e
-"$probe" "${probe_args[@]}" 2>&1 | "$PYTHON" -u scripts/perf_report.py --tee "$perf_state"
-status=${PIPESTATUS[0]}
-set -e
-"$PYTHON" scripts/perf_report.py --finish "$perf_state" --code "$status" --config "$BB_CONFIG" \
-    --data "$data" --octr "${version:-}" --edition "$title_id" || true
-exit "$status"
+exec "$probe" "${probe_args[@]}"
