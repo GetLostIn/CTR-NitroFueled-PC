@@ -107,6 +107,22 @@ memory), userfaultfd tracking, the watchdog/`--timeout` thread dumps, `BB_SAMPLE
 `tests/` programs. These are Linux diagnostics or Linux-only mechanisms; the game itself does not
 need them.
 
+## RecompLauncher
+
+[RecompLauncher](https://recomplauncher.com) installs the portable ZIP and sets it up from the player's
+own dumps. `packaging/windows/portable/recomplauncher.json` goes to the top of the ZIP (next to
+`CTR-NitroFueled-PC.exe`; `make_portable.py` copies it) and describes:
+
+- Easy Setup: two folder inputs (the base game and the 1.21 update). Its setup step runs
+  `tools/merge_update.py --progress --check` with the bundled Python: the same hard-link merge as the
+  launcher's *Prepare the game*, into `CUSA13795-1.21` in the install folder (copied, not linked, when
+  the dumps are on another drive), then the check `run.py` makes at every start.
+- Start: `run.py` with the bundled Python and `BB_GAME_DIR` pointing at that folder.
+- Settings: the `bbport.ini` keys the launcher's Settings tab writes (resolution, aspect and output,
+  upscaling, frame generation, FPS limit, fullscreen, MSAA, FPS counter).
+
+Keep it in step with `bbport.ini` when keys are added or renamed. It is not read by the game itself.
+
 ## Portable build
 
 `packaging/windows/make_portable.py` makes the portable ZIP (the file in Releases) from a finished
