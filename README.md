@@ -6,6 +6,8 @@
 
 **Crash Team Racing: Nitro-Fueled (PS4, CUSA13795 v1.21) running natively on Windows 10/11.**
 
+<a href="https://recomplauncher.com/game/ctr-nitrofueled-pc"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
+
 This is a Windows fork of [SacredFire](https://github.com/T3CHNOLOG1C/SacredFire), the native
 Linux port of the game by T3CHNOLOG1C. The game's own x86-64 code runs directly on the CPU, a
 small runtime replaces the PS4 system libraries, and a renderer derived from shadPS4 translates
