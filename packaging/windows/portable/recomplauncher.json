@@ -1,0 +1,177 @@
+{
+  "$schema": "https://recomplauncher.com/schema/recomplauncher.json",
+  "format": 1,
+  "name": "CTR-NitroFueled-PC",
+  "repo": "GetLostIn/CTR-NitroFueled-PC",
+  "inputs": [
+    {
+      "id": "base",
+      "label": "Your base game: the decrypted dump folder of Crash Team Racing Nitro-Fueled, CUSA13795 (USA) or CUSA14876 (Europe), version 1.00.",
+      "role": "game",
+      "formats": [{ "type": "folder" }]
+    },
+    {
+      "id": "update",
+      "label": "Your 1.21 update: the decrypted dump folder of its update (CUSA13795-patch or CUSA14876-patch). Both builds of 1.21 work.",
+      "role": "update",
+      "formats": [{ "type": "folder" }]
+    }
+  ],
+  "prepare": {
+    "program": ["python/python.exe"],
+    "args": [
+      "-X", "utf8", "tools/merge_update.py",
+      "{input:base}", "{input:update}", "{install}/CUSA13795-1.21",
+      "--progress", "--check"
+    ],
+    "label": "Merging the 1.21 update over the base game",
+    "timeout": 3600
+  },
+  "start": {
+    "program": ["python/python.exe"],
+    "args": ["-X", "utf8", "run.py"],
+    "env": { "BB_GAME_DIR": "{install}/CUSA13795-1.21" }
+  },
+  "config": [
+    {
+      "id": "main",
+      "format": "ini",
+      "file": [{ "path": "{install}/bbport.ini" }],
+      "new": {
+        "menu_language": "en",
+        "upscaler": "off",
+        "preset": "0",
+        "show_fps": "0",
+        "patch_60fps": "1",
+        "patch_no_motion_blur": "1",
+        "patch_pro_1080p": "0",
+        "render_res": "1080",
+        "temporal": "fsr1",
+        "dlss_quality": "auto",
+        "dlss_output": "1080",
+        "dlss_model": "transformer",
+        "fsr3_sharpness": "0.30",
+        "framegen": "off",
+        "framegen_motion": "flow",
+        "aspect_ratio": "16:9",
+        "output_res": "1920x1080",
+        "fps_limit": "60",
+        "async_pipelines": "0",
+        "fullscreen": "0",
+        "msaa": "0"
+      }
+    }
+  ],
+  "saves": ["{install}/user/savedata", "{install}/user/trophies", "{install}/bbport.ini"],
+  "folders": {
+    "saves": [{ "path": "{install}/user/savedata" }],
+    "logs": [{ "path": "{install}" }]
+  },
+  "exit_codes": {
+    "2": "These aren't game files this port runs. Pick the base game and its 1.21 update again on the game's page.",
+    "20": "This processor is missing an instruction set the game needs, and the port can't stand in for it."
+  },
+  "settings": [
+    {
+      "id": "resolution",
+      "label": "Resolution",
+      "help": "What the game draws its 3D scene at. 1440p and above come out as a 4K picture, which also smooths edges on a 1080p screen. Applies at the next start.",
+      "choices": [
+        { "label": "480p", "set": { "render_res": "480" } },
+        { "label": "720p", "set": { "render_res": "720" } },
+        { "label": "1080p", "set": { "render_res": "1080" } },
+        { "label": "1440p", "set": { "render_res": "1440" } },
+        { "label": "1620p", "set": { "render_res": "1620" } },
+        { "label": "4K", "set": { "render_res": "2160" } }
+      ],
+      "defaults": { "render_res": "1080" }
+    },
+    {
+      "id": "aspect",
+      "label": "Aspect and output",
+      "help": "The shape and size of the picture. The ultrawide choices centre the HUD, turn upscaling off and cap the resolution at 1440p. The first ultrawide start prepares about 9 GB of patched files, so play once in 16:9 up to the menu first.",
+      "choices": [
+        { "label": "16:9, 1280 x 720", "set": { "aspect_ratio": "16:9", "output_res": "1280x720" } },
+        { "label": "16:9, 1920 x 1080", "set": { "aspect_ratio": "16:9", "output_res": "1920x1080" } },
+        { "label": "16:9, 2560 x 1440", "set": { "aspect_ratio": "16:9", "output_res": "2560x1440" } },
+        { "label": "16:9, 3840 x 2160", "set": { "aspect_ratio": "16:9", "output_res": "3840x2160" } },
+        { "label": "21:9, 2560 x 1080", "set": { "aspect_ratio": "21:9", "output_res": "2560x1080" } },
+        { "label": "21:9, 3440 x 1440", "set": { "aspect_ratio": "21:9", "output_res": "3440x1440" } },
+        { "label": "32:9, 5120 x 1440", "set": { "aspect_ratio": "32:9", "output_res": "5120x1440" } }
+      ],
+      "defaults": { "aspect_ratio": "16:9", "output_res": "1920x1080" }
+    },
+    {
+      "id": "upscaling",
+      "label": "Upscaling",
+      "help": "FSR 1 sharpens the picture as it grows. FSR 3, FSR 4 (experimental) and DLSS rebuild detail from the game's depth and motion. DLSS needs an NVIDIA RTX card. If you see trails, go back to FSR 1. Off while an ultrawide choice is on.",
+      "choices": [
+        { "label": "Off", "set": { "temporal": "off" } },
+        { "label": "AMD FSR 1", "set": { "temporal": "fsr1" } },
+        { "label": "AMD FSR 3", "set": { "temporal": "fsr3" } },
+        { "label": "AMD FSR 4", "set": { "temporal": "fsr4" } },
+        { "label": "NVIDIA DLSS", "set": { "temporal": "dlss" } }
+      ],
+      "defaults": { "temporal": "fsr1" }
+    },
+    {
+      "id": "framegen",
+      "label": "Frame generation",
+      "help": "Shows a generated frame between each pair of game frames (AMD FSR 3, experimental). Best on a 120 Hz or faster screen with the frame rate limit at half the refresh rate.",
+      "choices": [
+        { "label": "Off", "set": { "framegen": "off" } },
+        { "label": "AMD FSR 3", "set": { "framegen": "fsr3" } }
+      ],
+      "defaults": { "framegen": "off" }
+    },
+    {
+      "id": "fps_limit",
+      "label": "Frame rate limit",
+      "help": "The most frames per second the game draws. 60 by default; higher limits need a fast PC.",
+      "choices": [
+        { "label": "30", "set": { "fps_limit": "30" } },
+        { "label": "60", "set": { "fps_limit": "60" } },
+        { "label": "72", "set": { "fps_limit": "72" } },
+        { "label": "90", "set": { "fps_limit": "90" } },
+        { "label": "120", "set": { "fps_limit": "120" } },
+        { "label": "144", "set": { "fps_limit": "144" } },
+        { "label": "240", "set": { "fps_limit": "240" } },
+        { "label": "No limit", "set": { "fps_limit": "0" } }
+      ],
+      "defaults": { "fps_limit": "60" }
+    },
+    {
+      "id": "fullscreen",
+      "label": "Window",
+      "help": "Fullscreen fills your screen. Windowed opens the game in a window.",
+      "choices": [
+        { "label": "Windowed", "set": { "fullscreen": "0" } },
+        { "label": "Fullscreen", "set": { "fullscreen": "1" } }
+      ],
+      "defaults": { "fullscreen": "0" }
+    },
+    {
+      "id": "msaa",
+      "label": "Anti-aliasing",
+      "help": "The game's own 2x MSAA. Off by default because it draws dotted lines in the sky.",
+      "choices": [
+        { "label": "Off", "set": { "msaa": "0" } },
+        { "label": "2x MSAA", "set": { "msaa": "1" } }
+      ],
+      "defaults": { "msaa": "0" }
+    },
+    {
+      "id": "show_fps",
+      "label": "Show FPS",
+      "help": "The frame rate in the corner of the game.",
+      "choices": [
+        { "label": "Off", "set": { "show_fps": "0" } },
+        { "label": "On", "set": { "show_fps": "1" } }
+      ],
+      "defaults": { "show_fps": "0" }
+    }
+  ],
+  "actions": [
+    { "id": "saves", "label": "Saves", "help": "Your saved games.", "open": "saves" }
+  ]
+}

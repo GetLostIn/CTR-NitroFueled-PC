@@ -51,6 +51,34 @@ class MergeUpdateTests(unittest.TestCase):
             self.assertFalse((out / 'Image0').exists())
             self.assertFalse((out / 'Sc0').exists())
 
+    def merge_fake_game(self, *options):
+        """Two minimal dumps merged with the given options (their files are not a real game)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            for name in ('base', 'patch'):
+                write(tmp / name / 'eboot.bin')
+                write(tmp / name / 'sce_sys/param.sfo')
+            return subprocess.run([sys.executable, str(ROOT / 'tools/merge_update.py'), *options,
+                                   str(tmp / 'base'), str(tmp / 'patch'), str(tmp / 'out')],
+                                  capture_output=True, text=True)
+
+    def test_progress_lines(self):
+        result = self.merge_fake_game('--progress')
+        self.assertEqual(result.returncode, 0)
+        lines = [line for line in result.stdout.splitlines() if line.startswith('progress ')]
+        self.assertEqual(lines[-1], 'progress 1.00 Game files ready')
+        self.assertIn('progress 0.95 Linking game files (4 of 4)', lines)
+
+    def test_no_progress_lines_without_the_option(self):
+        result = self.merge_fake_game()
+        self.assertEqual(result.returncode, 0)
+        self.assertNotIn('progress', result.stdout)
+
+    def test_check_refuses_a_game_this_port_does_not_run(self):
+        result = self.merge_fake_game('--check')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Unsupported game files', result.stderr)
+
     def test_not_a_game(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)

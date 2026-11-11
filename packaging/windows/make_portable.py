@@ -263,9 +263,12 @@ def main():
     # The launcher sets up the game folder and starts it; the .bat is the way without it.
     # bbport.default.ini, not bbport.ini: unzipping a new version over an old one keeps the
     # player's settings (run.py and the launcher copy the defaults when bbport.ini is missing).
+    # recomplauncher.json (RecompLauncher's setup and settings) has to sit at the top of the ZIP, next
+    # to the launcher.
     for source, target in (('bbport.default.ini', 'bbport.default.ini'),
                            ('Jugar CTR Nitro-Fueled.bat', 'Jugar sin launcher.bat'),
-                           ('LEEME.txt', 'LEEME.txt')):
+                           ('LEEME.txt', 'LEEME.txt'),
+                           ('recomplauncher.json', 'recomplauncher.json')):
         write_text(folder / target, (PORTABLE / source).read_text(encoding='utf-8'))
     write_text(folder / 'LICENSE', (ROOT / 'LICENSE').read_text(encoding='utf-8'))
     (folder / 'THIRD-PARTY.txt').write_bytes(third_party(dlls, python, bool(dlss_files)).encode('utf-8'))
